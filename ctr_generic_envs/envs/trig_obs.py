@@ -13,7 +13,6 @@ q: Current joint as relative joint representation
 """
 
 
-# TODO: How to deal with beta and alpha spaces when tube lengths are different
 class TrigObs(object):
     def __init__(self, systems, goal_tolerance_parameters, noise_parameters, initial_q, relative_q, ext_tol):
         self.systems = systems
