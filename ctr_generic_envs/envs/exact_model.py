@@ -14,6 +14,11 @@ class ExactModel(object):
         self.r3 = []
         self.r_transforms = []
 
+    # Random return to test without integration mpi issues.
+    def forward_kinematics(self, q, system_idx, **kwargs):
+        return np.random.rand(3)
+
+    """
     # q[0:2] are extension values and q[3:5] rotation values from the base
     # in general q[..] = [betas.., alphas]
     # q0 are starting joint values
@@ -113,6 +118,7 @@ class ExactModel(object):
         self.r2 = r2
         self.r3 = r3
         return r[-1]
+    """
 
     def ode_eq(self, y, s, ux_0, uy_0, ei, gj):
         # first num_tubes elements represent curvatures along z
