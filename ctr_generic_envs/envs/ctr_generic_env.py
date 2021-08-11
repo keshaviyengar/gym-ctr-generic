@@ -4,6 +4,8 @@ import numpy as np
 from ctr_generic_envs.envs.trig_obs import TrigObs
 from ctr_generic_envs.envs.exact_model import ExactModel
 
+from ctr_generic_envs.envs.CTR_Python import Tube
+
 
 class TubeParameters(object):
     def __init__(self, length, length_curved, outer_diameter, inner_diameter, stiffness, torsional_stiffness,
@@ -86,7 +88,7 @@ class CtrGenericEnv(gym.GoalEnv):
             tubes = list()
             for i in range(0, num_tubes):
                 tube_args = system_args['tube_' + str(i)]
-                tubes.append(TubeParameters(**tube_args))
+                tubes.append(Tube(**tube_args))
             self.systems.append(tubes)
 
         self.num_tubes = len(self.systems[0])
