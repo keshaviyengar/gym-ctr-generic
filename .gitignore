@@ -4,9 +4,9 @@ __pycache__
 *$py.class
 *.pyc
 *.travis.yml
-ctm_envs.egg-info/
+ctr_generic_envs.egg-info/
 
-ctm_envs.egg-info/*
+ctr_generic_envs.egg-info/*
 .idea/
 
 # C extensions
