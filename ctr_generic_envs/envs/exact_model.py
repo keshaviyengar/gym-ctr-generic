@@ -15,7 +15,6 @@ class ExactModel(object):
         self.r3 = []
         self.r_transforms = []
 
-    # Random return to test without integration mpi issues.
     def forward_kinematics(self, q, system_idx, **kwargs):
         q_0 = np.array([0, 0, 0, 0, 0, 0])
         # position of tubes' base from template (i.e., s=0)

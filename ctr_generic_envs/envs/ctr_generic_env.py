@@ -119,10 +119,9 @@ class CtrGenericEnv(gym.GoalEnv):
 
         self.system_idx = 0
 
-    # TODO: Reset the system idx
     def reset(self, goal=None):
         self.t = 0
-        self.system_idx = 0
+        self.system_idx = np.random.randint(2)
         self.r_df = None
         if goal is None:
             # Resample a desired goal and its associated q joint

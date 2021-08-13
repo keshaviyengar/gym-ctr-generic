@@ -105,7 +105,7 @@ class TrigObs(object):
             'desired_goal': desired_goal,
             'achieved_goal': noisy_achieved_goal,
             'observation': np.concatenate(
-                (rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))
+                (rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance]), np.array([system_idx]))
             )
         }
         return self.obs
@@ -155,11 +155,10 @@ class TrigObs(object):
         final_tol = self.goal_tolerance_parameters['final_tol']
         rep_space = self.get_rep_space()
 
-        # TODO: re-add the system-idx
         obs_space_low = np.concatenate(
-            (rep_space.low, np.array([-2 * 0.1, -2 * 0.1, -0.2, final_tol])))
+            (rep_space.low, np.array([-2 * 0.1, -2 * 0.1, -0.2, final_tol, 0])))
         obs_space_high = np.concatenate(
-            (rep_space.high, np.array([2 * 0.1, 2 * 0.1, 0.2, initial_tol])))
+            (rep_space.high, np.array([2 * 0.1, 2 * 0.1, 0.2, initial_tol, 1])))
         observation_space = gym.spaces.Dict(dict(
             desired_goal=gym.spaces.Box(low=np.array([-0.1, -0.1, 0]), high=np.array([0.1, 0.1, 0.2]),
                                         dtype="float32"),
