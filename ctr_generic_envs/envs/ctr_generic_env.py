@@ -148,6 +148,8 @@ class CtrGenericEnv(gym.GoalEnv):
 
     def step(self, action):
         assert not np.all(np.isnan(action))
+        # Update goal tolerance value
+        self.goal_tol_obj.update()
         for _ in range(self.n_substeps):
             self.rep_obj.set_action(action, self.system_idx)
         # Compute FK
