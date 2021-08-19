@@ -117,6 +117,8 @@ class ExactModel(object):
             sol = solve_ivp(fun=lambda s, y: self.ode_eq(s, y, segmentation.U_x[:, seg], segmentation.U_y[:, seg],
                                                          segmentation.EI[:, seg], segmentation.GJ[:, seg]),
                             t_span=(min(s_span), max(s_span)), y0=y_0, t_eval=s_span)
+            if sol.status == -1:
+                print(sol.message)
             s = np.transpose(sol.y)
             Length = np.append(Length, s_span)
             u_z = np.vstack((u_z, s[:, (0, 1, 2)]))
