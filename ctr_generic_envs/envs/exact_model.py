@@ -49,9 +49,9 @@ class ExactModel(object):
         # initial twist
         uz_0_ = np.array([0, 0, 0])
         shape, U_z, tip = self.ctr_model(uz_0_, alpha_0_, r_0_, R_0_, segment, beta)
-        #return shape[-1]
-
-        return np.random.rand(3)
+        assert not np.any(np.isnan(shape))
+        return shape[-1]
+        #return np.random.rand(3)
 
     def get_r(self):
         return self.r
@@ -118,11 +118,9 @@ class ExactModel(object):
             #    segmentation.U_x[:, seg], segmentation.U_y[:, seg], segmentation.EI[:, seg], segmentation.GJ[:, seg]),
             #           tfirst=True)
             if np.all(np.diff(s_span) < 0):
-                print("s_span not sorted correctly.")
-                print(s_span)
-                print(beta)
-                print(np.array([tube1.L, tube2.L, tube3.L]) + beta)
-                s_span = np.zeros_like(s_span)
+                print("s_span not sorted correctly. Resorting...")
+                print("linespace: ", s_span[seg], s_span[seg+1] - 1e-6)
+                s_span = np.sort(s_span)
             sol = solve_ivp(fun=lambda s, y: self.ode_eq(s, y, segmentation.U_x[:, seg], segmentation.U_y[:, seg],
                                                          segmentation.EI[:, seg], segmentation.GJ[:, seg]),
                             t_span=(min(s_span), max(s_span)), y0=y_0, t_eval=s_span)
