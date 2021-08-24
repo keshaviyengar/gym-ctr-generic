@@ -1,8 +1,11 @@
 import numpy as np
 from math import pi, pow
-from scipy.integrate import odeint
+from scipy.integrate import odeint, solve_ivp
 
 from ctr_generic_envs.envs.CTR_Python import Segment
+from ctr_generic_envs.envs.CTR_Python import CTR_Model
+
+from mpi4py import MPI
 
 class ExactModel(object):
     def __init__(self, systems):
@@ -16,11 +19,24 @@ class ExactModel(object):
         self.r_transforms = []
 
     def forward_kinematics(self, q, system_idx, **kwargs):
+        """
         q_0 = np.array([0, 0, 0, 0, 0, 0])
+        # initial twist (for ivp solver)
+        uz_0 = np.array([0.0, 0.0, 0.0])
+        u1_xy_0 = np.array([[0.0], [0.0]])
+        # force on robot tip along x, y, and z direction
+        f = np.array([0, 0, 0]).reshape(3, 1)
+
+        # Use this command if you wish to use initial value problem (ivp) solver (less accurate but faster)
+        CTR = CTR_Model(self.systems[0][0], self.systems[0][1], self.systems[0][2], f, q, q_0, 0.01, 1)
+        cost = CTR.minimize(np.concatenate((u1_xy_0, uz_0), axis=None))
+        return CTR.r[-1]
+        """
         # position of tubes' base from template (i.e., s=0)
+        q_0 = np.array([0, 0, 0, 0, 0, 0])
         beta = q[0:3] + q_0[0:3]
 
-        segment = Segment(self.systems[0][0], self.systems[0][1], self.systems[0][1], beta)
+        segment = Segment(self.systems[0][0], self.systems[0][1], self.systems[0][2], beta)
 
         r_0_ = np.array([0, 0, 0]).reshape(3, 1)
         alpha_1_0 = q[3] + q_0[3]
@@ -32,7 +48,9 @@ class ExactModel(object):
         # initial twist
         uz_0_ = np.array([0, 0, 0])
         shape, U_z, tip = self.ctr_model(uz_0_, alpha_0_, r_0_, R_0_, segment, beta)
+        assert not np.any(np.isnan(shape))
         return shape[-1]
+        #return np.random.rand(3)
 
     def get_r(self):
         return self.r
@@ -44,7 +62,7 @@ class ExactModel(object):
         return self.r_transforms
 
     # ode equation
-    def ode_eq(self, y, s, ux_0, uy_0, ei, gj):
+    def ode_eq(self, s, y, ux_0, uy_0, ei, gj):
         dydt = np.empty([18, 1])
         ux = np.empty([3, 1])
         uy = np.empty([3, 1])
@@ -83,6 +101,9 @@ class ExactModel(object):
 
     # CTR model
     def ctr_model(self, uz_0, alpha_0, r_0, R_0, segmentation, beta):
+        tube1 = self.systems[0][0]
+        tube2 = self.systems[0][1]
+        tube3 = self.systems[0][2]
         Length = np.empty(0)
         r = np.empty((0, 3))
         u_z = np.empty((0, 3))
@@ -92,8 +113,19 @@ class ExactModel(object):
             # Initial conditions, 3 initial twist + 3 initial angle + 3 initial position + 9 initial rotation matrix
             y_0 = np.vstack((uz_0.reshape(3, 1), alpha_0, r_0, R_0)).ravel()
             s_span = np.linspace(span[seg], span[seg + 1] - 1e-6, num=30)
-            s = odeint(self.ode_eq, y_0, s_span, args=(
-                segmentation.U_x[:, seg], segmentation.U_y[:, seg], segmentation.EI[:, seg], segmentation.GJ[:, seg]))
+            #s = odeint(self.ode_eq, y_0, s_span, args=(
+            #    segmentation.U_x[:, seg], segmentation.U_y[:, seg], segmentation.EI[:, seg], segmentation.GJ[:, seg]),
+            #           tfirst=True)
+            if np.all(np.diff(s_span) < 0):
+                print("s_span not sorted correctly. Resorting...")
+                print("linespace: ", s_span[seg], s_span[seg+1] - 1e-6)
+                s_span = np.sort(s_span)
+            sol = solve_ivp(fun=lambda s, y: self.ode_eq(s, y, segmentation.U_x[:, seg], segmentation.U_y[:, seg],
+                                                         segmentation.EI[:, seg], segmentation.GJ[:, seg]),
+                            t_span=(min(s_span), max(s_span)), y0=y_0, t_eval=s_span)
+            if sol.status == -1:
+                print(sol.message)
+            s = np.transpose(sol.y)
             Length = np.append(Length, s_span)
             u_z = np.vstack((u_z, s[:, (0, 1, 2)]))
             alpha = np.vstack((alpha, s[:, (3, 4, 5)]))
@@ -105,9 +137,6 @@ class ExactModel(object):
             uz_0 = u_z[-1, :].reshape(3, 1)
             alpha_0 = alpha[-1, :].reshape(3, 1)
 
-        tube1 = self.systems[0][0]
-        tube2 = self.systems[0][1]
-        tube3 = self.systems[0][2]
         d_tip = np.array([tube1.L, tube2.L, tube3.L]) + beta
         u_z_end = np.array([0.0, 0.0, 0.0])
         tip_pos = np.array([0, 0, 0])

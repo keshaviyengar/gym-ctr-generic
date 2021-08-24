@@ -5,6 +5,7 @@ from ctr_generic_envs.envs.trig_obs import TrigObs
 from ctr_generic_envs.envs.exact_model import ExactModel
 
 from ctr_generic_envs.envs.CTR_Python import Tube
+import time
 
 
 class TubeParameters(object):
@@ -126,7 +127,11 @@ class CtrGenericEnv(gym.GoalEnv):
         if goal is None:
             # Resample a desired goal and its associated q joint
             self.desired_q = self.rep_obj.sample_goal(self.system_idx)
+            start = time.time()
             desired_goal = self.model.forward_kinematics(self.desired_q, self.system_idx)
+            end = time.time()
+            if (end - start) > 5.0:
+                print("Kinematics has failed.")
         else:
             desired_goal = goal
         if self.resample_joints:
@@ -135,7 +140,11 @@ class CtrGenericEnv(gym.GoalEnv):
             achieved_goal = self.model.forward_kinematics(self.rep_obj.get_q(), self.system_idx)
             self.starting_position = achieved_goal
         else:
+            start = time.time()
             achieved_goal = self.model.forward_kinematics(self.rep_obj.get_q(), self.system_idx)
+            end = time.time()
+            if (end - start) > 5.0:
+                print("Kinematics has failed.")
             self.starting_position = achieved_goal
             self.starting_joints = self.rep_obj.get_q()
         obs = self.rep_obj.get_obs(desired_goal, achieved_goal, self.goal_tol_obj.get_tol(), self.system_idx)
@@ -147,12 +156,16 @@ class CtrGenericEnv(gym.GoalEnv):
 
     def step(self, action):
         assert not np.all(np.isnan(action))
-        # Goal Tolerance update
-        self.update_goal_tolerance()
+        # Update goal tolerance value
+        self.goal_tol_obj.update()
         for _ in range(self.n_substeps):
             self.rep_obj.set_action(action, self.system_idx)
         # Compute FK
+        start = time.time()
         achieved_goal = self.model.forward_kinematics(self.rep_obj.q, self.system_idx)
+        end = time.time()
+        if (end - start) > 5.0:
+            print("Kinematics has failed.")
         desired_goal = self.rep_obj.get_desired_goal()
         self.t += 1
         reward = self.compute_reward(achieved_goal, desired_goal, dict())
@@ -160,20 +173,22 @@ class CtrGenericEnv(gym.GoalEnv):
         obs = self.rep_obj.get_obs(desired_goal, achieved_goal, self.goal_tol_obj.get_tol(), self.system_idx)
         if self.evaluation:
             # Evaluation infos
-            info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
-                    'errors_pos': np.linalg.norm(desired_goal - achieved_goal),
-                    'errors_orient': 0,
-                    'position_tolerance': self.goal_tol_obj.get_tol(),
-                    'orientation_tolerance': 0,
-                    'achieved_goal': achieved_goal,
-                    'desired_goal': desired_goal, 'starting_position': self.starting_position,
-                    'q_desired': self.desired_q, 'q_achieved': self.rep_obj.get_q(), 'q_starting': self.starting_joints}
+            info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol())}
+            #info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
+            #        'errors_pos': np.linalg.norm(desired_goal - achieved_goal),
+            #        'errors_orient': 0,
+            #        'position_tolerance': self.goal_tol_obj.get_tol(),
+            #        'orientation_tolerance': 0,
+            #        'achieved_goal': achieved_goal,
+            #        'desired_goal': desired_goal, 'starting_position': self.starting_position,
+            #        'q_desired': self.desired_q, 'q_achieved': self.rep_obj.get_q(), 'q_starting': self.starting_joints}
         else:
-            info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
-                    'errors_pos':  np.linalg.norm(desired_goal - achieved_goal),
-                    'errors_orient': 0,
-                    'position_tolerance': self.goal_tol_obj.get_tol(),
-                    'orientation_tolerance': 0}
+            info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol())}
+            #info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
+            #        'errors_pos':  np.linalg.norm(desired_goal - achieved_goal),
+            #        'errors_orient': 0,
+            #        'position_tolerance': self.goal_tol_obj.get_tol(),
+            #        'orientation_tolerance': 0}
 
         return obs, reward, done, info
 
