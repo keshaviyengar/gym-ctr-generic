@@ -128,8 +128,6 @@ class CtrGenericEnv(gym.GoalEnv):
             # Resample a desired goal and its associated q joint
             self.desired_q = self.rep_obj.sample_goal(self.system_idx)
             desired_goal = self.model.forward_kinematics(self.desired_q, self.system_idx)
-            if (end - start) > 5.0:
-                print("Kinematics has failed.")
         else:
             desired_goal = goal
         if self.resample_joints:
@@ -139,8 +137,6 @@ class CtrGenericEnv(gym.GoalEnv):
             self.starting_position = achieved_goal
         else:
             achieved_goal = self.model.forward_kinematics(self.rep_obj.get_q(), self.system_idx)
-            if (end - start) > 5.0:
-                print("Kinematics has failed.")
             self.starting_position = achieved_goal
             self.starting_joints = self.rep_obj.get_q()
         obs = self.rep_obj.get_obs(desired_goal, achieved_goal, self.goal_tol_obj.get_tol(), self.system_idx)
