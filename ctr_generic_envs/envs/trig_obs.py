@@ -108,6 +108,25 @@ class TrigObs(object):
                 (rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))
             )
         }
+        np.set_printoptions(precision=3)
+        if not self.observation_space["desired_goal"].contains(desired_goal):
+            print("desired goal not in space.")
+        if not self.observation_space["achieved_goal"].contains(achieved_goal):
+            print("achieved goal not in space.")
+        if not self.observation_space["observation"].contains(self.obs["observation"]):
+            if not self.get_rep_space().contains(rep):
+                if np.argwhere(rep < self.get_rep_space().low).size != 0:
+                    print("rep_val: ", rep[np.argwhere(rep < self.get_rep_space().low)])
+                    print("rep_low: ", self.get_rep_space().low)
+                if np.argwhere(rep > self.get_rep_space().high).size != 0:
+                    print("rep_val: ", rep[np.argwhere(rep > self.get_rep_space().high)])
+                    print("rep_high: ", self.get_rep_space().high)
+                print("rep: ", rep)
+            else:
+                print("goal error or tolerance out of bounds.")
+                print("low: ", self.observation_space["observation"].low[9:])
+                print("high: ", self.observation_space["observation"].high[9:])
+                print("error and tol: ", np.concatenate((desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))))
         return self.obs
 
     def get_q(self):
@@ -145,8 +164,8 @@ class TrigObs(object):
         zero_tol = 1e-4
         max_tube_lengths = np.amax(np.array(self.tube_lengths), axis=0)
         for tube_length in max_tube_lengths:
-            rep_low = np.append(rep_low, [-1, -1, -tube_length + zero_tol])
-            rep_high = np.append(rep_high, [1, 1, 0])
+            rep_low = np.append(rep_low, [-1, -1, -2*tube_length + zero_tol])
+            rep_high = np.append(rep_high, [1, 1, 2*tube_length])
         rep_space = gym.spaces.Box(low=rep_low, high=rep_high, dtype="float32")
         return rep_space
 
@@ -157,13 +176,13 @@ class TrigObs(object):
 
         # TODO: re-add the system-idx
         obs_space_low = np.concatenate(
-            (rep_space.low, np.array([-2 * 0.1, -2 * 0.1, -0.2, final_tol])))
+            (rep_space.low, np.array([-0.5, -0.5, -0.5, final_tol - 1e-4])))
         obs_space_high = np.concatenate(
-            (rep_space.high, np.array([2 * 0.1, 2 * 0.1, 0.2, initial_tol])))
+            (rep_space.high, np.array([0.5, 0.5, 0.5, initial_tol + 1e-4])))
         observation_space = gym.spaces.Dict(dict(
-            desired_goal=gym.spaces.Box(low=np.array([-0.1, -0.1, 0]), high=np.array([0.1, 0.1, 0.2]),
+            desired_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, 0]), high=np.array([0.5, 0.5, 0.5]),
                                         dtype="float32"),
-            achieved_goal=gym.spaces.Box(low=np.array([-0.1, -0.1, 0]), high=np.array([0.1, 0.1, 0.2]),
+            achieved_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, 0]), high=np.array([0.5, 0.5, 0.5]),
                                          dtype="float32"),
             observation=gym.spaces.Box(
                 low=obs_space_low,
