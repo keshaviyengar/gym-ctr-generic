@@ -83,9 +83,11 @@ class TrigObs(object):
                 #       q_sample[i - 1] + self.tube_lengths[i - 1], " >= ", q_sample[i] + self.tube_lengths[i])
                 # print("valid joint: ", valid_joint)
                 # print("")
+            sample_counter += 1
             if all(valid_joint):
                 break
-            sample_counter += 1
+            if sample_counter > 1000:
+                print("Stuck sampling goals...")
         q_constrain = np.concatenate((betas, alphas))
         return q_constrain
 
@@ -100,33 +102,32 @@ class TrigObs(object):
             rep = self.joint2rep(rel_q)
         else:
             rep = self.joint2rep(noisy_q)
-
         self.obs = {
             'desired_goal': desired_goal,
             'achieved_goal': noisy_achieved_goal,
             'observation': np.concatenate(
-                (rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))
+                (rep, (desired_goal - noisy_achieved_goal) * 1000, np.array([goal_tolerance]) * 1000)
             )
         }
-        np.set_printoptions(precision=3)
-        if not self.observation_space["desired_goal"].contains(desired_goal):
-            print("desired goal not in space.")
-        if not self.observation_space["achieved_goal"].contains(achieved_goal):
-            print("achieved goal not in space.")
-        if not self.observation_space["observation"].contains(self.obs["observation"]):
-            if not self.get_rep_space().contains(rep):
-                if np.argwhere(rep < self.get_rep_space().low).size != 0:
-                    print("rep_val: ", rep[np.argwhere(rep < self.get_rep_space().low)])
-                    print("rep_low: ", self.get_rep_space().low)
-                if np.argwhere(rep > self.get_rep_space().high).size != 0:
-                    print("rep_val: ", rep[np.argwhere(rep > self.get_rep_space().high)])
-                    print("rep_high: ", self.get_rep_space().high)
-                print("rep: ", rep)
-            else:
-                print("goal error or tolerance out of bounds.")
-                print("low: ", self.observation_space["observation"].low[9:])
-                print("high: ", self.observation_space["observation"].high[9:])
-                print("error and tol: ", np.concatenate((desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))))
+        #np.set_printoptions(precision=3)
+        #if not self.observation_space["desired_goal"].contains(desired_goal):
+        #    print("desired goal not in space.")
+        #if not self.observation_space["achieved_goal"].contains(achieved_goal):
+        #    print("achieved goal not in space.")
+        #if not self.observation_space["observation"].contains(self.obs["observation"]):
+        #    if not self.get_rep_space().contains(rep):
+        #        if np.argwhere(rep < self.get_rep_space().low).size != 0:
+        #            print("rep_val: ", rep[np.argwhere(rep < self.get_rep_space().low)])
+        #            print("rep_low: ", self.get_rep_space().low)
+        #        if np.argwhere(rep > self.get_rep_space().high).size != 0:
+        #            print("rep_val: ", rep[np.argwhere(rep > self.get_rep_space().high)])
+        #            print("rep_high: ", self.get_rep_space().high)
+        #        print("rep: ", rep)
+        #    else:
+        #        print("goal error or tolerance out of bounds.")
+        #        print("low: ", self.observation_space["observation"].low[9:])
+        #        print("high: ", self.observation_space["observation"].high[9:])
+        #        print("error and tol: ", np.concatenate((desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))))
         return self.obs
 
     def get_q(self):

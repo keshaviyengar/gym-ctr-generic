@@ -50,30 +50,6 @@ class ExactModel(object):
         uz_0_ = np.array([0, 0, 0])
         shape, U_z, tip = self.ctr_model(uz_0_, alpha_0_, r_0_, R_0_, segment, beta)
         assert not np.any(np.isnan(shape))
-        if shape[-1][0] > 0.1:
-            print(shape[-1])
-            shape[-1][0] = 0.1
-            print("out of workspace in x.")
-        if shape[-1][0] < -0.1:
-            print(shape[-1])
-            shape[-1][0] = -0.1
-            print("out of workspace in x.")
-        if shape[-1][1] > 0.1:
-            print(shape[-1])
-            shape[-1][1] = 0.1
-            print("out of workspace in y.")
-        if shape[-1][1] < -0.1:
-            print(shape[-1])
-            shape[-1][1] = -0.1
-            print("out of workspace in y.")
-        if shape[-1][2] < 0.0:
-            print(shape[-1])
-            shape[-1][2] = 0.0
-            print("out of workspace in z.")
-        if shape[-1][2] > 0.2:
-            print(shape[-1])
-            shape[-1][2] = 0.2
-            print("out of workspace in z.")
         return shape[-1]
         #return np.random.rand(3)
 
