@@ -103,10 +103,10 @@ class TrigObs(object):
         else:
             rep = self.joint2rep(noisy_q)
         self.obs = {
-            'desired_goal': desired_goal,
-            'achieved_goal': noisy_achieved_goal,
-            'observation': np.concatenate(
-                (rep, (desired_goal - noisy_achieved_goal) * 1000, np.array([goal_tolerance]) * 1000)
+            'desired_goal': (desired_goal).astype(np.float32),
+            'achieved_goal': (noisy_achieved_goal).astype(np.float32),
+            'observation': (np.concatenate(
+                (rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))).astype(np.float32)
             )
         }
         #np.set_printoptions(precision=3)
