@@ -50,6 +50,7 @@ class ExactModel(object):
         uz_0_ = np.array([0, 0, 0])
         shape, U_z, tip = self.ctr_model(uz_0_, alpha_0_, r_0_, R_0_, segment, beta)
         assert not np.any(np.isnan(shape))
+        print("rank: ", MPI.COMM_WORLD.Get_rank(), shape[-1])
         return shape[-1]
         #return np.random.rand(3)
 
