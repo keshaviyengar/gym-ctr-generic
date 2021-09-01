@@ -184,7 +184,7 @@ class CtrGenericEnv(gym.GoalEnv):
     def compute_reward(self, achieved_goal, desired_goal, info):
         assert achieved_goal.shape == desired_goal.shape
         d = np.linalg.norm(achieved_goal - desired_goal, axis=-1)
-        return -(d > self.goal_tol_obj.get_tol()).astype(np.float32)
+        return -(d > self.goal_tol_obj.get_tol()).astype(np.float64)
 
     def close(self):
         print("Closed env.")

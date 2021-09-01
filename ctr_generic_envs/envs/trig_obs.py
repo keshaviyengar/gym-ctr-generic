@@ -102,12 +102,13 @@ class TrigObs(object):
             rep = self.joint2rep(rel_q)
         else:
             rep = self.joint2rep(noisy_q)
+        obs = np.concatenate([
+            rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance], dtype=np.float64)
+        ])
         self.obs = {
-            'desired_goal': (desired_goal).astype(np.float32),
-            'achieved_goal': (noisy_achieved_goal).astype(np.float32),
-            'observation': (np.concatenate(
-                (rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))).astype(np.float32)
-            )
+            'desired_goal': desired_goal.copy(),
+            'achieved_goal': noisy_achieved_goal.copy(),
+            'observation':  obs.copy()
         }
         #np.set_printoptions(precision=3)
         #if not self.observation_space["desired_goal"].contains(desired_goal):
@@ -167,7 +168,7 @@ class TrigObs(object):
         for tube_length in max_tube_lengths:
             rep_low = np.append(rep_low, [-1, -1, -2*tube_length + zero_tol])
             rep_high = np.append(rep_high, [1, 1, 2*tube_length])
-        rep_space = gym.spaces.Box(low=rep_low, high=rep_high, dtype="float32")
+        rep_space = gym.spaces.Box(low=rep_low, high=rep_high, dtype="float64")
         return rep_space
 
     def get_observation_space(self):
@@ -182,13 +183,13 @@ class TrigObs(object):
             (rep_space.high, np.array([0.5, 0.5, 0.5, initial_tol + 1e-4])))
         observation_space = gym.spaces.Dict(dict(
             desired_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, 0]), high=np.array([0.5, 0.5, 0.5]),
-                                        dtype="float32"),
+                                        dtype="float64"),
             achieved_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, 0]), high=np.array([0.5, 0.5, 0.5]),
-                                         dtype="float32"),
+                                         dtype="float64"),
             observation=gym.spaces.Box(
                 low=obs_space_low,
                 high=obs_space_high,
-                dtype="float32")
+                dtype="float64")
         ))
         self.obs_dim = obs_space_low.size
         return observation_space
