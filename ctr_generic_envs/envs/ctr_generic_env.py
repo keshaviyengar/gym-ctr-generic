@@ -150,7 +150,7 @@ class CtrGenericEnv(gym.GoalEnv):
         assert not np.all(np.isnan(action))
         assert self.action_space.contains(action)
         # Update goal tolerance value
-        #self.goal_tol_obj.update()
+        self.goal_tol_obj.update()
         for _ in range(self.n_substeps):
             self.rep_obj.set_action(action, self.system_idx)
         # Compute FK
@@ -184,11 +184,7 @@ class CtrGenericEnv(gym.GoalEnv):
     def compute_reward(self, achieved_goal, desired_goal, info):
         assert achieved_goal.shape == desired_goal.shape
         d = np.linalg.norm(achieved_goal - desired_goal, axis=-1)
-        if d > self.goal_tol_obj.get_tol():
-            return -1.0
-        else:
-            return 0.0
-        # return -(d > self.goal_tol_obj.get_tol()).astype(np.float64)
+        return -(d > self.goal_tol_obj.get_tol()).astype(np.float64)
 
     def close(self):
         print("Closed env.")
