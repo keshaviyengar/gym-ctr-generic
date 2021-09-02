@@ -177,15 +177,9 @@ class TrigObs(object):
         rep_space = self.get_rep_space()
 
         obs_space_low = np.concatenate(
-<<<<<<< HEAD
-            (rep_space.low, np.array([-2 * 0.1, -2 * 0.1, -0.2, final_tol, 0])))
-        obs_space_high = np.concatenate(
-            (rep_space.high, np.array([2 * 0.1, 2 * 0.1, 0.2, initial_tol, 1])))
-=======
             (rep_space.low, np.array([-0.5, -0.5, -0.5, final_tol - 1e-4])))
         obs_space_high = np.concatenate(
             (rep_space.high, np.array([0.5, 0.5, 0.5, initial_tol + 1e-4])))
->>>>>>> 6311b00b7436f346b5e444ae775cf5b596d696fc
         observation_space = gym.spaces.Dict(dict(
             desired_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, 0]), high=np.array([0.5, 0.5, 0.5]),
                                         dtype="float64"),
