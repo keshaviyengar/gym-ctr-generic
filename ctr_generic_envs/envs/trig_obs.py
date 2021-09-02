@@ -83,9 +83,11 @@ class TrigObs(object):
                 #       q_sample[i - 1] + self.tube_lengths[i - 1], " >= ", q_sample[i] + self.tube_lengths[i])
                 # print("valid joint: ", valid_joint)
                 # print("")
+            sample_counter += 1
             if all(valid_joint):
                 break
-            sample_counter += 1
+            if sample_counter > 1000:
+                print("Stuck sampling goals...")
         q_constrain = np.concatenate((betas, alphas))
         return q_constrain
 
@@ -100,14 +102,33 @@ class TrigObs(object):
             rep = self.joint2rep(rel_q)
         else:
             rep = self.joint2rep(noisy_q)
-
+        obs = np.concatenate([
+            rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance], dtype=np.float64)
+        ])
         self.obs = {
-            'desired_goal': desired_goal,
-            'achieved_goal': noisy_achieved_goal,
-            'observation': np.concatenate(
-                (rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance]), np.array([system_idx]))
-            )
+            'desired_goal': desired_goal.copy(),
+            'achieved_goal': noisy_achieved_goal.copy(),
+            'observation':  obs.copy()
         }
+        #np.set_printoptions(precision=3)
+        #if not self.observation_space["desired_goal"].contains(desired_goal):
+        #    print("desired goal not in space.")
+        #if not self.observation_space["achieved_goal"].contains(achieved_goal):
+        #    print("achieved goal not in space.")
+        #if not self.observation_space["observation"].contains(self.obs["observation"]):
+        #    if not self.get_rep_space().contains(rep):
+        #        if np.argwhere(rep < self.get_rep_space().low).size != 0:
+        #            print("rep_val: ", rep[np.argwhere(rep < self.get_rep_space().low)])
+        #            print("rep_low: ", self.get_rep_space().low)
+        #        if np.argwhere(rep > self.get_rep_space().high).size != 0:
+        #            print("rep_val: ", rep[np.argwhere(rep > self.get_rep_space().high)])
+        #            print("rep_high: ", self.get_rep_space().high)
+        #        print("rep: ", rep)
+        #    else:
+        #        print("goal error or tolerance out of bounds.")
+        #        print("low: ", self.observation_space["observation"].low[9:])
+        #        print("high: ", self.observation_space["observation"].high[9:])
+        #        print("error and tol: ", np.concatenate((desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))))
         return self.obs
 
     def get_q(self):
@@ -145,9 +166,9 @@ class TrigObs(object):
         zero_tol = 1e-4
         max_tube_lengths = np.amax(np.array(self.tube_lengths), axis=0)
         for tube_length in max_tube_lengths:
-            rep_low = np.append(rep_low, [-1, -1, -tube_length + zero_tol])
-            rep_high = np.append(rep_high, [1, 1, 0])
-        rep_space = gym.spaces.Box(low=rep_low, high=rep_high, dtype="float32")
+            rep_low = np.append(rep_low, [-1, -1, -2*tube_length + zero_tol])
+            rep_high = np.append(rep_high, [1, 1, 2*tube_length])
+        rep_space = gym.spaces.Box(low=rep_low, high=rep_high, dtype="float64")
         return rep_space
 
     def get_observation_space(self):
@@ -156,18 +177,24 @@ class TrigObs(object):
         rep_space = self.get_rep_space()
 
         obs_space_low = np.concatenate(
+<<<<<<< HEAD
             (rep_space.low, np.array([-2 * 0.1, -2 * 0.1, -0.2, final_tol, 0])))
         obs_space_high = np.concatenate(
             (rep_space.high, np.array([2 * 0.1, 2 * 0.1, 0.2, initial_tol, 1])))
+=======
+            (rep_space.low, np.array([-0.5, -0.5, -0.5, final_tol - 1e-4])))
+        obs_space_high = np.concatenate(
+            (rep_space.high, np.array([0.5, 0.5, 0.5, initial_tol + 1e-4])))
+>>>>>>> 6311b00b7436f346b5e444ae775cf5b596d696fc
         observation_space = gym.spaces.Dict(dict(
-            desired_goal=gym.spaces.Box(low=np.array([-0.1, -0.1, 0]), high=np.array([0.1, 0.1, 0.2]),
-                                        dtype="float32"),
-            achieved_goal=gym.spaces.Box(low=np.array([-0.1, -0.1, 0]), high=np.array([0.1, 0.1, 0.2]),
-                                         dtype="float32"),
+            desired_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, 0]), high=np.array([0.5, 0.5, 0.5]),
+                                        dtype="float64"),
+            achieved_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, 0]), high=np.array([0.5, 0.5, 0.5]),
+                                         dtype="float64"),
             observation=gym.spaces.Box(
                 low=obs_space_low,
                 high=obs_space_high,
-                dtype="float32")
+                dtype="float64")
         ))
         self.obs_dim = obs_space_low.size
         return observation_space
