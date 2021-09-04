@@ -36,7 +36,7 @@ class ExactModel(object):
         q_0 = np.array([0, 0, 0, 0, 0, 0])
         beta = q[0:3] + q_0[0:3]
 
-        segment = Segment(self.systems[0][0], self.systems[0][1], self.systems[0][2], beta)
+        segment = Segment(self.systems[system_idx][0], self.systems[system_idx][1], self.systems[system_idx][2], beta)
 
         r_0_ = np.array([0, 0, 0]).reshape(3, 1)
         alpha_1_0 = q[3] + q_0[3]
