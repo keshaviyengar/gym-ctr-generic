@@ -149,7 +149,7 @@ class CtrGenericEnv(gym.GoalEnv):
         assert not np.all(np.isnan(action))
         assert self.action_space.contains(action)
         # Update goal tolerance value
-        self.goal_tol_obj.update()
+        # self.goal_tol_obj.update()
         for _ in range(self.n_substeps):
             self.rep_obj.set_action(action, self.system_idx)
         # Compute FK
@@ -161,7 +161,8 @@ class CtrGenericEnv(gym.GoalEnv):
         obs = self.rep_obj.get_obs(desired_goal, achieved_goal, self.goal_tol_obj.get_tol(), self.system_idx)
         if self.evaluation:
             # Evaluation infos
-            info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol())}
+            info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
+                    'error': np.linalg.norm(desired_goal - achieved_goal)}
             #info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
             #        'errors_pos': np.linalg.norm(desired_goal - achieved_goal),
             #        'errors_orient': 0,
@@ -171,7 +172,8 @@ class CtrGenericEnv(gym.GoalEnv):
             #        'desired_goal': desired_goal, 'starting_position': self.starting_position,
             #        'q_desired': self.desired_q, 'q_achieved': self.rep_obj.get_q(), 'q_starting': self.starting_joints}
         else:
-            info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol())}
+            info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
+                    'error': np.linalg.norm(desired_goal - achieved_goal)}
             #info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
             #        'errors_pos':  np.linalg.norm(desired_goal - achieved_goal),
             #        'errors_orient': 0,
