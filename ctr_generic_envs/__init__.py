@@ -42,15 +42,15 @@ register(
             # RViM lab tube parameters
             'ctr_2': {
                 'tube_0':
-                    {'length': 309e-3, 'length_curved': 145e-3, 'inner_diameter': 0.7e-3, 'outer_diameter': 1.1e-3,
+                    {'length': 309e-3, 'length_curved': 145e-3, 'diameter_inner': 0.7e-3, 'diameter_outer': 1.1e-3,
                      'stiffness': 75e+9, 'torsional_stiffness': 25e+9, 'x_curvature': 13.52, 'y_curvature': 0
                      },
                 'tube_1':
-                    {'length': 275e-3, 'length_curved': 114e-3, 'inner_diameter': 1.4e-3, 'outer_diameter': 1.8 - 3,
+                    {'length': 275e-3, 'length_curved': 114e-3, 'diameter_inner': 1.4e-3, 'diameter_outer': 1.8 - 3,
                     'stiffness': 75e+9, 'torsional_stiffness': 25e+9, 'x_curvature': 11.68, 'y_curvature': 0
                      },
                'tube_2':
-                   {'length': 173e-3, 'length_curved': 173e-3, 'inner_diameter': 1.83e-3, 'outer_diameter': 2.39e-3,
+                   {'length': 173e-3, 'length_curved': 173e-3, 'diameter_inner': 1.83e-3, 'diameter_outer': 2.39e-3,
                     'stiffness': 75e+9, 'torsional_stiffness': 25e+9, 'x_curvature': 10.8, 'y_curvature': 0
                     }
             }
