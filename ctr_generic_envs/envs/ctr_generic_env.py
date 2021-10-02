@@ -53,15 +53,15 @@ class GoalTolerance(object):
             self.current_tol = self.set_tol
         self.training_step = 0
 
-    def update(self):
+    def update(self, timestep):
+        self.training_step = timestep
         if self.set_tol == 0:
-            if (self.function == 'linear') and (self.training_step <= self.N_ts):
+            if (self.function == 'linear') and (timestep <= self.N_ts):
                 self.current_tol = self.linear_function()
-            elif (self.function == 'decay') and (self.training_step <= self.N_ts):
+            elif (self.function == 'decay') and (timestep <= self.N_ts):
                 self.current_tol = self.decay_function()
             else:
                 self.current_tol = self.final_tol
-            self.training_step += 1
         else:
             self.current_tol = self.set_tol
 
@@ -191,8 +191,8 @@ class CtrGenericEnv(gym.GoalEnv):
     def close(self):
         print("Closed env.")
 
-    def update_goal_tolerance(self):
-        self.goal_tol_obj.update()
+    def update_goal_tolerance(self, timestep):
+        self.goal_tol_obj.update(timestep)
 
     def get_goal_tolerance(self):
         return self.goal_tol_obj.get_tol()
