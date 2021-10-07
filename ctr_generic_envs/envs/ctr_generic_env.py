@@ -78,8 +78,11 @@ class GoalTolerance(object):
 class CtrGenericEnv(gym.GoalEnv):
     def __init__(self, ctr_systems, action_length_limit, action_rotation_limit, max_episode_steps, n_substeps,
                  goal_tolerance_parameters, noise_parameters, relative_q, initial_q, resample_joints, render,
-                 evaluation):
-        self.num_systems = len(ctr_systems.keys())
+                 evaluation, num_systems=None):
+        if num_systems == None:
+            self.num_systems = len(ctr_systems.keys())
+        else:
+            self.num_systems = num_systems
         self.systems = list()
         for i in range(0, self.num_systems):
             system_args = ctr_systems['ctr_' + str(i)]

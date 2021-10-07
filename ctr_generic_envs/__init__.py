@@ -86,7 +86,8 @@ register(
         'relative_q': False,
         'resample_joints': False,
         'render': False,
-        'evaluation': False
+        'evaluation': False,
+        'num_systems': 3
     },
     max_episode_steps=150
 )
