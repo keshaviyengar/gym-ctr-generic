@@ -40,21 +40,22 @@ register(
                      }
             },
             # RViM lab tube parameters
-            #'ctr_2': {
-            #    'tube_0':
-            #        {'length': 309e-3, 'length_curved': 145e-3, 'diameter_inner': 0.7e-3, 'diameter_outer': 1.1e-3,
-            #         'stiffness': 75e+9, 'torsional_stiffness': 25e+9, 'x_curvature': 13.52, 'y_curvature': 0
-            #         },
-            #    'tube_1':
-            #        {'length': 275e-3, 'length_curved': 114e-3, 'diameter_inner': 1.4e-3, 'diameter_outer': 1.8 - 3,
-            #        'stiffness': 75e+9, 'torsional_stiffness': 25e+9, 'x_curvature': 11.68, 'y_curvature': 0
-            #         },
-            #   'tube_2':
-            #       {'length': 173e-3, 'length_curved': 173e-3, 'diameter_inner': 1.83e-3, 'diameter_outer': 2.39e-3,
-            #        'stiffness': 75e+9, 'torsional_stiffness': 25e+9, 'x_curvature': 10.8, 'y_curvature': 0
-            #        }
-            # Unknown tube parameters or where they are from
             'ctr_2': {
+                'tube_0':
+                    {'length': 309e-3, 'length_curved': 145e-3, 'diameter_inner': 0.7e-3, 'diameter_outer': 1.1e-3,
+                     'stiffness': 75e+9, 'torsional_stiffness': 25e+9, 'x_curvature': 13.52, 'y_curvature': 0
+                     },
+                'tube_1':
+                    {'length': 275e-3, 'length_curved': 114e-3, 'diameter_inner': 1.4e-3, 'diameter_outer': 1.8 - 3,
+                    'stiffness': 75e+9, 'torsional_stiffness': 25e+9, 'x_curvature': 11.68, 'y_curvature': 0
+                     },
+               'tube_2':
+                   {'length': 173e-3, 'length_curved': 173e-3, 'diameter_inner': 1.83e-3, 'diameter_outer': 2.39e-3,
+                    'stiffness': 75e+9, 'torsional_stiffness': 25e+9, 'x_curvature': 10.8, 'y_curvature': 0
+                    }
+            },
+            # Unknown tube parameters or where they are from
+            'ctr_3': {
                 'tube_0':
                     {'length': 215e-3, 'length_curved': 14.9e-3, 'diameter_inner': 1.0e-3, 'diameter_outer': 2.4e-3,
                      'stiffness': 5e+10, 'torsional_stiffness': 2.3e+10, 'x_curvature': 15.82, 'y_curvature': 0},

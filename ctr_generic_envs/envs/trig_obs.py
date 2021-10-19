@@ -14,7 +14,8 @@ q: Current joint as relative joint representation
 
 
 class TrigObs(object):
-    def __init__(self, systems, goal_tolerance_parameters, noise_parameters, initial_q, relative_q, ext_tol):
+    def __init__(self, systems, goal_tolerance_parameters, noise_parameters, initial_q, relative_q, ext_tol,
+                 constrain_alpha):
         self.systems = systems
         self.tube_lengths = list()
         self.num_tubes = len(self.systems[0])
@@ -37,11 +38,18 @@ class TrigObs(object):
         # Q space, create per system
         self.q_spaces = list()
         for tube_betas in self.tube_lengths:
-            self.q_spaces.append(gym.spaces.Box(low=np.concatenate((-np.array(tube_betas) + ext_tol,
-                                                                   np.full(self.num_tubes, -np.inf))),
-                                                high=np.concatenate((np.full(self.num_tubes, 0),
-                                                                    np.full(self.num_tubes, np.inf)))
-                                                ))
+            if constrain_alpha:
+                self.q_spaces.append(gym.spaces.Box(low=np.concatenate((-np.array(tube_betas) + ext_tol,
+                                                                        np.full(self.num_tubes, -np.pi))),
+                                                    high=np.concatenate((np.full(self.num_tubes, 0),
+                                                                         np.full(self.num_tubes, np.pi)))
+                                                    ))
+            else:
+                self.q_spaces.append(gym.spaces.Box(low=np.concatenate((-np.array(tube_betas) + ext_tol,
+                                                                       np.full(self.num_tubes, -np.inf))),
+                                                    high=np.concatenate((np.full(self.num_tubes, 0),
+                                                                        np.full(self.num_tubes, np.inf)))
+                                                    ))
         # desired, achieved goal space
         self.observation_space = self.get_observation_space()
 
@@ -87,7 +95,7 @@ class TrigObs(object):
             if all(valid_joint):
                 break
             if sample_counter > 1000:
-                print("Stuck sampling goals...")
+                raise ValueError("Stuck sampling goals")
         q_constrain = np.concatenate((betas, alphas))
         return q_constrain
 
@@ -102,9 +110,15 @@ class TrigObs(object):
             rep = self.joint2rep(rel_q)
         else:
             rep = self.joint2rep(noisy_q)
-        obs = np.concatenate([
-            rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance, system_idx], dtype=np.float64)
-        ])
+        if len(self.systems) == 1:
+            obs = np.concatenate([
+                rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance], dtype=np.float64)
+            ])
+        else:
+            obs = np.concatenate([
+                rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance, system_idx], dtype=np.float64)
+            ])
+
         self.obs = {
             'desired_goal': desired_goal.copy(),
             'achieved_goal': noisy_achieved_goal.copy(),
@@ -176,10 +190,17 @@ class TrigObs(object):
         final_tol = self.goal_tolerance_parameters['final_tol']
         rep_space = self.get_rep_space()
 
-        obs_space_low = np.concatenate(
-            (rep_space.low, np.array([-0.5, -0.5, -0.5, final_tol, 0])))
-        obs_space_high = np.concatenate(
-            (rep_space.high, np.array([0.5, 0.5, 0.5, initial_tol, 2])))
+        if len(self.systems) == 1:
+            obs_space_low = np.concatenate(
+                (rep_space.low, np.array([-0.5, -0.5, -0.5, final_tol])))
+            obs_space_high = np.concatenate(
+                (rep_space.high, np.array([0.5, 0.5, 0.5, initial_tol])))
+
+        else:
+            obs_space_low = np.concatenate(
+                (rep_space.low, np.array([-0.5, -0.5, -0.5, final_tol, 0])))
+            obs_space_high = np.concatenate(
+                (rep_space.high, np.array([0.5, 0.5, 0.5, initial_tol, len(self.systems) - 1])))
         observation_space = gym.spaces.Dict(dict(
             desired_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, 0]), high=np.array([0.5, 0.5, 0.5]),
                                         dtype="float64"),

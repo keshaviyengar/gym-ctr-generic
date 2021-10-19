@@ -74,25 +74,38 @@ class GoalTolerance(object):
     def decay_function(self):
         return self.a * np.power(1 - self.r, self.training_step)
 
-
+# TODO: Selecting tube systems
 class CtrGenericEnv(gym.GoalEnv):
     def __init__(self, ctr_systems, action_length_limit, action_rotation_limit, max_episode_steps, n_substeps,
-                 goal_tolerance_parameters, noise_parameters, relative_q, initial_q, resample_joints, render,
-                 evaluation, num_systems=None):
+                 goal_tolerance_parameters, noise_parameters, constrain_alpha, relative_q, initial_q, resample_joints,
+                 render, evaluation, num_systems=None, select_systems=None):
         if num_systems == None:
             self.num_systems = len(ctr_systems.keys())
         else:
             self.num_systems = num_systems
         self.systems = list()
-        for i in range(0, self.num_systems):
-            system_args = ctr_systems['ctr_' + str(i)]
-            # Extract tube parameters
-            num_tubes = len(system_args.keys())
-            tubes = list()
-            for i in range(0, num_tubes):
-                tube_args = system_args['tube_' + str(i)]
-                tubes.append(Tube(**tube_args))
-            self.systems.append(tubes)
+        if select_systems is None:
+            for i in range(0, self.num_systems):
+                system_args = ctr_systems['ctr_' + str(i)]
+                # Extract tube parameters
+                num_tubes = len(system_args.keys())
+                tubes = list()
+                for i in range(0, num_tubes):
+                    tube_args = system_args['tube_' + str(i)]
+                    tubes.append(Tube(**tube_args))
+                self.systems.append(tubes)
+        else:
+            if len(select_systems) != self.num_systems:
+                raise ValueError("Selected systems and number of systems do not match.")
+            for system in select_systems:
+                system_args = ctr_systems['ctr_' + str(system)]
+                # Extract tube parameters
+                num_tubes = len(system_args.keys())
+                tubes = list()
+                for i in range(0, num_tubes):
+                    tube_args = system_args['tube_' + str(i)]
+                    tubes.append(Tube(**tube_args))
+                self.systems.append(tubes)
 
         self.num_tubes = len(self.systems[0])
 
@@ -108,13 +121,15 @@ class CtrGenericEnv(gym.GoalEnv):
         self.max_episode_steps = max_episode_steps
         self.n_substeps = n_substeps
         self.resample_joints = resample_joints
+        self.constrain_alpha = constrain_alpha
         self.desired_q = []
 
         self.model = ExactModel(self.systems)
         ext_tol = 1e-4
         self.r_df = None
 
-        self.rep_obj = TrigObs(self.systems, goal_tolerance_parameters, noise_parameters, initial_q, relative_q, ext_tol)
+        self.rep_obj = TrigObs(self.systems, goal_tolerance_parameters, noise_parameters, initial_q, relative_q, ext_tol,
+                               constrain_alpha)
         self.goal_tol_obj = GoalTolerance(goal_tolerance_parameters)
         self.t = 0
         self.evaluation = evaluation
@@ -124,7 +139,7 @@ class CtrGenericEnv(gym.GoalEnv):
 
     def reset(self, goal=None):
         self.t = 0
-        self.system_idx = np.random.randint(2)
+        self.system_idx = np.random.randint(self.num_systems)
         self.r_df = None
         if goal is None:
             # Resample a desired goal and its associated q joint
