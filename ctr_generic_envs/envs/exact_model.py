@@ -47,9 +47,12 @@ class ExactModel(object):
 
         # initial twist
         uz_0_ = np.array([0, 0, 0])
-        shape, U_z, tip = self.ctr_model(uz_0_, alpha_0_, r_0_, R_0_, segment, beta)
-        assert not np.any(np.isnan(shape))
-        return shape[-1]
+        self.r, U_z, tip = self.ctr_model(system_idx, uz_0_, alpha_0_, r_0_, R_0_, segment, beta)
+        self.r1 = self.r[tip[1]:tip[0] + 1]
+        self.r2 = self.r[tip[2]:tip[1] + 1]
+        self.r3 = self.r[:tip[2] + 1]
+        assert not np.any(np.isnan(self.r))
+        return self.r[-1]
 
     def get_r(self):
         return self.r
@@ -99,10 +102,10 @@ class ExactModel(object):
         return dydt.ravel()
 
     # CTR model
-    def ctr_model(self, uz_0, alpha_0, r_0, R_0, segmentation, beta):
-        tube1 = self.systems[0][0]
-        tube2 = self.systems[0][1]
-        tube3 = self.systems[0][2]
+    def ctr_model(self, system_idx, uz_0, alpha_0, r_0, R_0, segmentation, beta):
+        tube1 = self.systems[system_idx][0]
+        tube2 = self.systems[system_idx][1]
+        tube3 = self.systems[system_idx][2]
         Length = np.empty(0)
         r = np.empty((0, 3))
         u_z = np.empty((0, 3))

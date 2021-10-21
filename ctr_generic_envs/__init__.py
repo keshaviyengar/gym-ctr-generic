@@ -82,6 +82,7 @@ register(
             # 0.001 is also the tracking std deviation for now for testing.
             'rotation_std': np.deg2rad(0), 'extension_std': 0.001 * np.deg2rad(0), 'tracking_std': 0.0
         },
+        'constrain_alpha': False,
         # Format is [beta_0, beta_1, ..., beta_n, alpha_0, ..., alpha_n]
         'initial_q': [0, 0, 0, 0, 0, 0],
         'relative_q': False,
