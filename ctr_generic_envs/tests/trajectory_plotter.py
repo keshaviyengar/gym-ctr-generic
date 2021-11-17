@@ -5,6 +5,7 @@ import numpy as np
 from stable_baselines import DDPG, HER
 from stable_baselines.common import set_global_seeds
 from stable_baselines.her.utils import HERGoalEnvWrapper
+from stable_baselines.bench.monitor import Monitor
 
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
@@ -54,7 +55,9 @@ def plot_trajectory(achived_goals, desired_goals, r1, r2, r3):
     ax.plot3D(r2[0][:,0], r2[0][:,1], r2[0][:,2], linewidth=3.0)
     ax.plot3D(r3[0][:,0], r3[0][:,1], r3[0][:,2], linewidth=4.0)
     ag = np.array(achived_goals)
+    dg = np.array(desired_goals)
     ax.plot3D(ag[:,0], ag[:,1], ag[:,2], marker='.', linestyle=':' )
+    ax.plot3D(dg[0,0], dg[0,1], dg[0,2], marker='.', linestyle=':' )
     ax.plot3D(r1[-1][:,0], r1[-1][:,1], r1[-1][:,2], linewidth=2.0)
     ax.plot3D(r2[-1][:,0], r2[-1][:,1], r2[-1][:,2], linewidth=3.0)
     ax.plot3D(r3[-1][:,0], r3[-1][:,1], r3[-1][:,2], linewidth=4.0)
@@ -71,4 +74,5 @@ if __name__ == '__main__':
                   }
     env, model = load_agent(env_id, env_kwargs, model_path)
     achieved_goals, desired_goals, r1, r2, r3 = run_episode(env, model)
-    plot_trajectory(achieved_goals, desired_goals, r1, r2, r3)
+    fig, ax = plot_trajectory(achieved_goals, desired_goals, r1, r2, r3)
+    plt.show()

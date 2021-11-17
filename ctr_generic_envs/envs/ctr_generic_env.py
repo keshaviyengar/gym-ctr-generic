@@ -109,6 +109,8 @@ class CtrGenericEnv(gym.GoalEnv):
 
         self.num_tubes = len(self.systems[0])
 
+        self.initial_q = initial_q
+
         self.action_length_limit = action_length_limit
         self.action_rotation_limit = action_rotation_limit
         # Action space
@@ -137,9 +139,12 @@ class CtrGenericEnv(gym.GoalEnv):
 
         self.system_idx = 0
 
-    def reset(self, goal=None):
+    def reset(self, goal=None, system_idx=None):
         self.t = 0
-        self.system_idx = np.random.randint(self.num_systems)
+        if system_idx is None:
+            self.system_idx = np.random.randint(self.num_systems)
+        else:
+            self.system_idx = system_idx
         self.r_df = None
         if goal is None:
             # Resample a desired goal and its associated q joint
@@ -153,6 +158,8 @@ class CtrGenericEnv(gym.GoalEnv):
             achieved_goal = self.model.forward_kinematics(self.rep_obj.get_q(), self.system_idx)
             self.starting_position = achieved_goal
         else:
+            self.starting_joints = np.asarray(self.initial_q)
+            self.rep_obj.set_q(self.starting_joints)
             achieved_goal = self.model.forward_kinematics(self.rep_obj.get_q(), self.system_idx)
             self.starting_position = achieved_goal
             self.starting_joints = self.rep_obj.get_q()
@@ -208,6 +215,9 @@ class CtrGenericEnv(gym.GoalEnv):
 
     def close(self):
         print("Closed env.")
+
+    def set_system_idx(self, system_idx):
+        self.system_idx = system_idx
 
     def update_goal_tolerance(self, timestep):
         self.goal_tol_obj.update(timestep)

@@ -6,9 +6,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
 
-def process_files_and_get_dataframes(all_files):
+def process_files_and_get_dataframes(all_files, names):
     dfs = []
-    names = ['1_million', '2_million']
     for f, name in zip(all_files, names):
         df = pd.read_csv(f)
         dg = np.array([df['desired_goal_x'], df['desired_goal_y'], df['desired_goal_z']])
@@ -16,7 +15,7 @@ def process_files_and_get_dataframes(all_files):
         sg = np.array([df['starting_position_x'], df['starting_position_y'], df['starting_position_z']])
         df['errors_pos'] = np.linalg.norm(np.transpose(ag - dg), axis=1) * 1000
         df['goal_dist'] = np.linalg.norm(np.transpose(sg - dg), axis=1) * 1000
-        df["exp"] = name
+        df["experiment"] = name
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True, sort=False)
 
@@ -34,20 +33,29 @@ def plot_B_box_plots(df, alpha):
 
 
 if __name__ == '__main__':
-    all_files = [
-        '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/generic_policy/data/mk_system/tro_5_million_generic_1_error_analysis.csv']
-    proc_df = process_files_and_get_dataframes(all_files)
+    project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
+    names = ['constrain_rotation/tro_constrain_0', 'free_rotation/tro_free_0']
+    #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
+    #names = ['two_tubes/tro_two_systems_2', 'three_tubes/tro_three_systems_0', 'four_tubes/tro_four_systems_0']
+    system_idx = None
+    if system_idx is not None:
+        eval_file_path = project_folder + names[0] + "/evaluations_" + str(system_idx) + ".csv"
+    else:
+        eval_file_path = project_folder + names[0] + "/evaluations.csv"
+
+    proc_df = process_files_and_get_dataframes([eval_file_path], [names[0]])
 
     plot_goal_distance_scatter = False
-    plot_rot_joints_box_plot = False
+    plot_rot_joints_box_plot = True
     plot_ext_joints_box_plot = False
-    plot_3d_workspace = True
+    plot_3d_desired_workspace = False
+    plot_3d_achieved_workspace = False
 
     if plot_goal_distance_scatter:
         sns.regplot(x='goal_dist', y='errors_pos', data=proc_df, ci=None, scatter_kws={"s": 10})
         plt.show()
 
-    num_bins = 20
+    num_bins = 90
     if plot_rot_joints_box_plot:
         # Rotation plots
         rotation_bins = np.linspace(np.deg2rad(-180), np.deg2rad(180), num_bins)
@@ -71,7 +79,31 @@ if __name__ == '__main__':
             plot_B_box_plots(proc_df, beta)
 
     # 3D workspace plots
-    if plot_3d_workspace:
+    if plot_3d_desired_workspace:
+        fig = plt.figure()
+        ax3D = fig.add_subplot(1, 2, 1, projection='3d')
+        ax3D.scatter(proc_df['desired_goal_x'] * 1000, proc_df['desired_goal_y'] * 1000, proc_df['desired_goal_z'] * 1000,
+                     c=proc_df['errors_pos'])
+        ax3D.set_xlabel("X (mm)")
+        ax3D.set_ylabel("Y (mm)")
+        ax3D.set_zlabel("Z (mm)")
+        ax3D.set_title("Desired goals with Errors")
+        ax3D = fig.add_subplot(1, 2, 2, projection='3d')
+        proc_df_tol = proc_df[proc_df['errors_pos'] > 5]
+        p = ax3D.scatter(proc_df_tol['desired_goal_x'] * 1000, proc_df_tol['desired_goal_y'] * 1000,
+                         proc_df_tol['desired_goal_z'] * 1000,
+                     c=proc_df_tol['errors_pos'])
+        ax3D.set_xlabel("X (mm)")
+        ax3D.set_ylabel("Y (mm)")
+        ax3D.set_zlabel("Z (mm)")
+        ax3D.set_title("Desired goals with Errors > 5 mm")
+        fig.subplots_adjust(right=0.8)
+        cbar_ax = fig.add_axes([0.9, 0.25, 0.01, 0.5])
+        fig.colorbar(p, cax=cbar_ax)
+        plt.show()
+
+    # 3D workspace plots
+    if plot_3d_achieved_workspace:
         fig = plt.figure()
         ax3D = fig.add_subplot(1, 2, 1, projection='3d')
         ax3D.scatter(proc_df['achieved_goal_x'] * 1000, proc_df['achieved_goal_y'] * 1000, proc_df['achieved_goal_z'] * 1000,
@@ -84,7 +116,7 @@ if __name__ == '__main__':
         proc_df_tol = proc_df[proc_df['errors_pos'] > 5]
         p = ax3D.scatter(proc_df_tol['achieved_goal_x'] * 1000, proc_df_tol['achieved_goal_y'] * 1000,
                          proc_df_tol['achieved_goal_z'] * 1000,
-                     c=proc_df_tol['errors_pos'])
+                         c=proc_df_tol['errors_pos'])
         ax3D.set_xlabel("X (mm)")
         ax3D.set_ylabel("Y (mm)")
         ax3D.set_zlabel("Z (mm)")

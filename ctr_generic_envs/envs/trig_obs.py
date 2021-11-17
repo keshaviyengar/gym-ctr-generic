@@ -74,8 +74,8 @@ class TrigObs(object):
         sample_counter = 0
         while True:
             q_goal_sample = self.q_spaces[system_idx]
-            q_goal_sample.low[3:] = np.full(self.num_tubes, -2*np.pi)
-            q_goal_sample.high[3:] = np.full(self.num_tubes, 2*np.pi)
+            q_goal_sample.low[3:] = np.full(self.num_tubes, -np.pi)
+            q_goal_sample.high[3:] = np.full(self.num_tubes, np.pi)
             q_sample = q_goal_sample.sample()
             betas = q_sample[0:self.num_tubes]
             alphas = q_sample[self.num_tubes:]
@@ -145,8 +145,9 @@ class TrigObs(object):
         #        print("error and tol: ", np.concatenate((desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))))
         return self.obs
 
+    # q is in relative coordinates to need to convert to absolute.
     def get_q(self):
-        return self.q
+        return self.qrel2abs(self.q)
 
     def set_q(self, q):
         self.q = q

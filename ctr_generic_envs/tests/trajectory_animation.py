@@ -82,10 +82,16 @@ def animate_trajectory(achieved_goals, desired_goals, r1, r2 ,r3):
     ax.plot3D(dg[0, 0], dg[0, 1], dg[0, 2], color='green', marker='o')
 
     ani = animation.FuncAnimation(fig, update_animation, len(achieved_goals), fargs=[tube1, tube2, tube3, ag_p, ag, r1, r2, r3])
-    plt.show()
+    return ani
 
 if __name__ == '__main__':
-    model_path = "/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/free_rot/p_256_units/her/CTR-Generic-Reach-v0_1/best_model.zip"
+    project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
+    names = ['constrain_rotation/tro_constrain_0', 'free_rotation/tro_free_0']
+    #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
+    #names = ['two_tubes/tro_two_systems_2', 'three_tubes/tro_three_systems_0', 'four_tubes/tro_four_systems_0']
+    gen_model_path = "/her/CTR-Generic-Reach-v0_1/rl_model_3000000_steps.zip"
+    model_path = project_folder + names[0] + gen_model_path
+
     # Env and model names and paths
     env_id = "CTR-Generic-Reach-v0"
     env_kwargs = {'evaluation': True, 'relative_q': True, 'resample_joints': True, 'num_systems': 1,
@@ -94,4 +100,5 @@ if __name__ == '__main__':
                   }
     env, model = load_agent(env_id, env_kwargs, model_path)
     achieved_goals, desired_goals, r1, r2, r3 = run_episode(env, model)
-    animate_trajectory(achieved_goals, desired_goals, r1, r2, r3)
+    ani = animate_trajectory(achieved_goals, desired_goals, r1, r2, r3)
+    ani.save('test.gif', writer='imagemagick', fps=5)

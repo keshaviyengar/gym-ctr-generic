@@ -57,11 +57,11 @@ if __name__ == '__main__':
     achieved_goals, desired_goals, r1, r2, r3 = trajectory_controller(model, env, x_points, y_points, z_points)
 
     # Plot the full trajectory
-    #fig, ax = plot_trajectory(achieved_goals, desired_goals, r1, r2, r3)
-    #ax.plot3D(x_points, y_points, z_points, marker='.', linestyle=':' )
-    #plt.show()
+    fig, ax = plot_trajectory(achieved_goals, desired_goals, r1, r2, r3)
+    ax.plot3D(x_points, y_points, z_points, marker='.', linestyle=':' )
+    plt.show()
 
     # Animate full trajectory
     # TODO: Animate doesn't plot trajectory but rather single goal
-    animate_trajectory(achieved_goals, desired_goals, r1, r2, r3)
+    #animate_trajectory(achieved_goals, desired_goals, r1, r2, r3)
     #ax.plot3D(x_points, y_points, z_points, marker='.', linestyle=':')
