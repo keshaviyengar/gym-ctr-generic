@@ -46,10 +46,17 @@ class TrigObs(object):
                                                     ))
             else:
                 self.q_spaces.append(gym.spaces.Box(low=np.concatenate((-np.array(tube_betas) + ext_tol,
-                                                                       np.full(self.num_tubes, -np.inf))),
+                                                                        np.full(self.num_tubes, -np.inf))),
                                                     high=np.concatenate((np.full(self.num_tubes, 0),
-                                                                        np.full(self.num_tubes, np.inf)))
+                                                                         np.full(self.num_tubes, np.inf)))
                                                     ))
+        self.q_sample_spaces = list()
+        for tube_betas in self.tube_lengths:
+            self.q_sample_spaces.append(gym.spaces.Box(low=np.concatenate((-np.array(tube_betas) + ext_tol,
+                                                                           np.full(self.num_tubes, -np.pi))),
+                                                       high=np.concatenate((np.full(self.num_tubes, 0),
+                                                                            np.full(self.num_tubes, np.pi)))
+                                                       ))
         # desired, achieved goal space
         self.observation_space = self.get_observation_space()
 
@@ -73,17 +80,15 @@ class TrigObs(object):
         # while loop to get constrained points, maybe switch this for a workspace later on
         sample_counter = 0
         while True:
-            q_goal_sample = self.q_spaces[system_idx]
-            q_goal_sample.low[3:] = np.full(self.num_tubes, -np.pi)
-            q_goal_sample.high[3:] = np.full(self.num_tubes, np.pi)
-            q_sample = q_goal_sample.sample()
+            q_sample = self.q_sample_spaces[system_idx].sample()
             betas = q_sample[0:self.num_tubes]
             alphas = q_sample[self.num_tubes:]
             # Apply constraints
             valid_joint = []
             for i in range(1, self.num_tubes):
                 valid_joint.append((betas[i - 1] <= betas[i]) and (
-                        betas[i - 1] + self.tube_lengths[system_idx][i - 1] >= self.tube_lengths[system_idx][i] + betas[i]))
+                        betas[i - 1] + self.tube_lengths[system_idx][i - 1] >= self.tube_lengths[system_idx][i] + betas[
+                    i]))
                 # print(self.num_tubes)
                 # print("q_sample: ", q_sample)
                 # print("B", i - 1, " <= ", "B", i, " : ", q_sample[i - 1], " <= ", q_sample[i])
@@ -122,14 +127,14 @@ class TrigObs(object):
         self.obs = {
             'desired_goal': desired_goal.copy(),
             'achieved_goal': noisy_achieved_goal.copy(),
-            'observation':  obs.copy()
+            'observation': obs.copy()
         }
-        #np.set_printoptions(precision=3)
-        #if not self.observation_space["desired_goal"].contains(desired_goal):
+        # np.set_printoptions(precision=3)
+        # if not self.observation_space["desired_goal"].contains(desired_goal):
         #    print("desired goal not in space.")
-        #if not self.observation_space["achieved_goal"].contains(achieved_goal):
+        # if not self.observation_space["achieved_goal"].contains(achieved_goal):
         #    print("achieved goal not in space.")
-        #if not self.observation_space["observation"].contains(self.obs["observation"]):
+        # if not self.observation_space["observation"].contains(self.obs["observation"]):
         #    if not self.get_rep_space().contains(rep):
         #        if np.argwhere(rep < self.get_rep_space().low).size != 0:
         #            print("rep_val: ", rep[np.argwhere(rep < self.get_rep_space().low)])
@@ -147,7 +152,7 @@ class TrigObs(object):
 
     # q is in relative coordinates to need to convert to absolute.
     def get_q(self):
-        return self.qrel2abs(self.q)
+        return self.q
 
     def set_q(self, q):
         self.q = q
@@ -181,8 +186,8 @@ class TrigObs(object):
         zero_tol = 1e-4
         max_tube_lengths = np.amax(np.array(self.tube_lengths), axis=0)
         for tube_length in max_tube_lengths:
-            rep_low = np.append(rep_low, [-1, -1, -2*tube_length + zero_tol])
-            rep_high = np.append(rep_high, [1, 1, 2*tube_length])
+            rep_low = np.append(rep_low, [-1, -1, -2 * tube_length + zero_tol])
+            rep_high = np.append(rep_high, [1, 1, 2 * tube_length])
         rep_space = gym.spaces.Box(low=rep_low, high=rep_high, dtype="float64")
         return rep_space
 
