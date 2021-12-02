@@ -78,7 +78,7 @@ class KeyboardControl(object):
 
 
 if __name__ == '__main__':
-    gen_model_path = "/her/CTR-Generic-Reach-v0_1/rl_model_3000000_steps.zip"
+    gen_model_path = "/her/CTR-Generic-Reach-v0_1/best_model.zip"
 
     project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
     names = ['constrain_rotation/tro_constrain_3', 'free_rotation/tro_free_3']
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     model_path = project_folder + names[exp] + gen_model_path
     # Env and model names and paths
     env_id = "CTR-Generic-Reach-v0"
-    env_kwargs = {'evaluation': True, 'relative_q': True, 'resample_joints': True, 'constrain_alpha': True,
+    env_kwargs = {'evaluation': True, 'relative_q': True, 'resample_joints': True, 'constrain_alpha': False,
                   'num_systems': 1, 'select_systems': [3],
                   'goal_tolerance_parameters': {'inc_tol_obs': True, 'initial_tol': 0.020, 'final_tol': 0.001,
                                                 'N_ts': 200000, 'function': 'constant', 'set_tol': 0.001}

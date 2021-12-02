@@ -34,8 +34,12 @@ def plot_B_box_plots(df, alpha):
 
 if __name__ == '__main__':
     project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
-    names = ['constrain_rotation/tro_constrain_3', 'free_rotation/tro_free_3']
     #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
+    #names = ['constrain_rotation/tro_constrain_3', 'free_rotation/tro_free_3']
+    #names = ['constrain_rotation/icra_const_pro_3']
+    names = ['free_rotation/tro_free_3']
+    #names = ['free_rotation/icra_free_3']
+    #names = ['free_rotation/icra_free_pro_3']
     #names = ['two_tubes/tro_two_systems_2', 'three_tubes/tro_three_systems_0', 'four_tubes/tro_four_systems_0']
     system_idx = None
     exp = 0
@@ -48,9 +52,11 @@ if __name__ == '__main__':
 
     plot_goal_distance_scatter = False
     plot_rot_joints_box_plot = False
+    wrap_angles = True
     plot_ext_joints_box_plot = False
     plot_3d_desired_workspace = False
-    plot_3d_achieved_workspace = False
+    plot_3d_achieved_workspace = True
+    error_threshold = 5
 
     if plot_goal_distance_scatter:
         sns.regplot(x='goal_dist', y='errors_pos', data=proc_df, ci=None, scatter_kws={"s": 10})
@@ -62,8 +68,9 @@ if __name__ == '__main__':
         rotation_bins = np.linspace(np.deg2rad(-180), np.deg2rad(180), num_bins)
         rot_label_bins = np.around(np.linspace(np.deg2rad(-180), np.deg2rad(180), num_bins - 1), 2)
         for alpha in range(1, 4):
-            #proc_df["alpha_achieved_" + str(alpha)] = (proc_df["alpha_achieved_" + str(alpha)] + np.pi) % (
-            #            2 * np.pi) - np.pi
+            if wrap_angles:
+                proc_df["alpha_achieved_" + str(alpha)] = (proc_df["alpha_achieved_" + str(alpha)] + np.pi) % (
+                            2 * np.pi) - np.pi
             proc_df["alpha_achieved_" + str(alpha) + "_bins"] = pd.cut(proc_df["alpha_achieved_" + str(alpha)],
                                                                        bins=rotation_bins, labels=rot_label_bins)
             plot_alpha_box_plots(proc_df, alpha)
@@ -88,13 +95,13 @@ if __name__ == '__main__':
         ax3D.set_xlabel("X (mm)")
         ax3D.set_ylabel("Y (mm)")
         ax3D.set_zlabel("Z (mm)")
-        axis_lims = 0.07 * 1000
+        axis_lims = 0.075 * 1000
         ax3D.set_xlim3d([-axis_lims, axis_lims])
         ax3D.set_ylim3d([-axis_lims, axis_lims])
         ax3D.set_zlim3d([0.0, 2 * axis_lims])
         ax3D.set_title("Desired goals with Errors")
         ax3D = fig.add_subplot(1, 2, 2, projection='3d')
-        proc_df_tol = proc_df[proc_df['errors_pos'] > 2]
+        proc_df_tol = proc_df[proc_df['errors_pos'] > error_threshold]
         p = ax3D.scatter(proc_df_tol['desired_goal_x'] * 1000, proc_df_tol['desired_goal_y'] * 1000,
                          proc_df_tol['desired_goal_z'] * 1000,
                      c=proc_df_tol['errors_pos'])
@@ -104,7 +111,7 @@ if __name__ == '__main__':
         ax3D.set_xlim3d([-axis_lims, axis_lims])
         ax3D.set_ylim3d([-axis_lims, axis_lims])
         ax3D.set_zlim3d([0.0, 2 * axis_lims])
-        ax3D.set_title("Desired goals with Errors > 2 mm")
+        ax3D.set_title("Desired goals with Errors > " + str(error_threshold) + " mm")
         fig.subplots_adjust(right=0.8)
         cbar_ax = fig.add_axes([0.9, 0.25, 0.01, 0.5])
         fig.colorbar(p, cax=cbar_ax)
@@ -115,27 +122,27 @@ if __name__ == '__main__':
         fig = plt.figure()
         ax3D = fig.add_subplot(1, 2, 1, projection='3d')
         ax3D.scatter(proc_df['achieved_goal_x'] * 1000, proc_df['achieved_goal_y'] * 1000, proc_df['achieved_goal_z'] * 1000,
-                     c=proc_df['errors_pos'])
+                     c=proc_df['errors_pos'], s=5)
         ax3D.set_xlabel("X (mm)")
         ax3D.set_ylabel("Y (mm)")
         ax3D.set_zlabel("Z (mm)")
-        axis_lims = 0.07 * 1000
+        axis_lims = 0.075 * 1000
         ax3D.set_xlim3d([-axis_lims, axis_lims])
         ax3D.set_ylim3d([-axis_lims, axis_lims])
         ax3D.set_zlim3d([0.0, 2 * axis_lims])
         ax3D.set_title("Achieved goals with Errors")
         ax3D = fig.add_subplot(1, 2, 2, projection='3d')
-        proc_df_tol = proc_df[proc_df['errors_pos'] > 2]
+        proc_df_tol = proc_df[proc_df['errors_pos'] > error_threshold]
         p = ax3D.scatter(proc_df_tol['achieved_goal_x'] * 1000, proc_df_tol['achieved_goal_y'] * 1000,
                          proc_df_tol['achieved_goal_z'] * 1000,
-                         c=proc_df_tol['errors_pos'])
+                         c=proc_df_tol['errors_pos'], s=5)
         ax3D.set_xlabel("X (mm)")
         ax3D.set_ylabel("Y (mm)")
         ax3D.set_zlabel("Z (mm)")
         ax3D.set_xlim3d([-axis_lims, axis_lims])
         ax3D.set_ylim3d([-axis_lims, axis_lims])
         ax3D.set_zlim3d([0.0, 2 * axis_lims])
-        ax3D.set_title("Achieved goals with Errors > 2 mm")
+        ax3D.set_title("Achieved goals with Errors > " + str(error_threshold) + " mm")
         fig.subplots_adjust(right=0.8)
         cbar_ax = fig.add_axes([0.9, 0.25, 0.01, 0.5])
         fig.colorbar(p, cax=cbar_ax)
