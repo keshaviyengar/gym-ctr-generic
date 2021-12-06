@@ -186,9 +186,9 @@ class TrigObs(object):
         zero_tol = 1e-4
         max_tube_lengths = np.amax(np.array(self.tube_lengths), axis=0)
         for tube_length in max_tube_lengths:
-            rep_low = np.append(rep_low, [-1, -1, -2 * tube_length + zero_tol])
-            rep_high = np.append(rep_high, [1, 1, 2 * tube_length])
-        rep_space = gym.spaces.Box(low=rep_low, high=rep_high, dtype="float64")
+            rep_low = np.append(rep_low, [-1, -1, -tube_length + zero_tol])
+            rep_high = np.append(rep_high, [1, 1, 0])
+        rep_space = gym.spaces.Box(low=rep_low, high=rep_high, dtype="float32")
         return rep_space
 
     def get_observation_space(self):
@@ -198,24 +198,24 @@ class TrigObs(object):
 
         if len(self.systems) == 1:
             obs_space_low = np.concatenate(
-                (rep_space.low, np.array([-0.5, -0.5, -0.5, final_tol])))
+                (rep_space.low, np.array([-2 * 0.1, -2 * 0.1, -0.2, final_tol])))
             obs_space_high = np.concatenate(
-                (rep_space.high, np.array([0.5, 0.5, 0.5, initial_tol])))
+                (rep_space.high, np.array([2 * 0.1, 2 * 0.1, 0.2, initial_tol])))
 
         else:
             obs_space_low = np.concatenate(
-                (rep_space.low, np.array([-0.5, -0.5, -0.5, final_tol, 0])))
+                (rep_space.low, np.array([-2 * 0.1, -2 * 0.1, -0.2, final_tol, 0])))
             obs_space_high = np.concatenate(
-                (rep_space.high, np.array([0.5, 0.5, 0.5, initial_tol, len(self.systems) - 1])))
+                (rep_space.high, np.array([2 * 0.1, 2 * 0.1, 0.2, initial_tol, len(self.systems) - 1])))
         observation_space = gym.spaces.Dict(dict(
-            desired_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, 0]), high=np.array([0.5, 0.5, 0.5]),
-                                        dtype="float64"),
-            achieved_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, 0]), high=np.array([0.5, 0.5, 0.5]),
-                                         dtype="float64"),
+            desired_goal=gym.spaces.Box(low=np.array([-0.1, -0.1, 0]), high=np.array([0.1, 0.1, 0.2]),
+                                        dtype="float32"),
+            achieved_goal=gym.spaces.Box(low=np.array([-0.1, -0.1, 0]), high=np.array([0.1, 0.1, 0.2]),
+                                         dtype="float32"),
             observation=gym.spaces.Box(
                 low=obs_space_low,
                 high=obs_space_high,
-                dtype="float64")
+                dtype="float32")
         ))
         self.obs_dim = obs_space_low.size
         return observation_space

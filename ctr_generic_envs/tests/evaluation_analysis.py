@@ -37,8 +37,7 @@ if __name__ == '__main__':
     #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
     #names = ['constrain_rotation/tro_constrain_3', 'free_rotation/tro_free_3']
     #names = ['constrain_rotation/icra_const_pro_3']
-    names = ['free_rotation/tro_free_3']
-    #names = ['free_rotation/icra_free_3']
+    names = ['free_rotation/icra_free_3']
     #names = ['free_rotation/icra_free_pro_3']
     #names = ['two_tubes/tro_two_systems_2', 'three_tubes/tro_three_systems_0', 'four_tubes/tro_four_systems_0']
     system_idx = None
@@ -49,13 +48,16 @@ if __name__ == '__main__':
         eval_file_path = project_folder + names[exp] + "/evaluations.csv"
 
     proc_df = process_files_and_get_dataframes([eval_file_path], [names[exp]])
+    print("mean errors: " + str(np.mean(proc_df["errors_pos"])))
+    print("std errors: " + str(np.std(proc_df["errors_pos"])))
+    print("success rate: " + str(proc_df[proc_df["errors_pos"] < 1].shape))
 
     plot_goal_distance_scatter = False
     plot_rot_joints_box_plot = False
-    wrap_angles = True
+    wrap_angles = False
     plot_ext_joints_box_plot = False
     plot_3d_desired_workspace = False
-    plot_3d_achieved_workspace = True
+    plot_3d_achieved_workspace = False
     error_threshold = 5
 
     if plot_goal_distance_scatter:
