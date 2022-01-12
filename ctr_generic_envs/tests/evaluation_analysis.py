@@ -36,9 +36,8 @@ if __name__ == '__main__':
     project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
     #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
     #names = ['constrain_rotation/tro_constrain_3', 'free_rotation/tro_free_3']
-    #names = ['constrain_rotation/icra_const_pro_3']
-    names = ['free_rotation/icra_free_3']
-    #names = ['free_rotation/icra_free_pro_3']
+    #names = ['constrain_rotation/tro_constrain_3']
+    names = ['free_rotation/tro_free_3']
     #names = ['two_tubes/tro_two_systems_2', 'three_tubes/tro_three_systems_0', 'four_tubes/tro_four_systems_0']
     system_idx = None
     exp = 0
