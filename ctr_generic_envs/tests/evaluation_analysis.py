@@ -1,5 +1,6 @@
 import pandas as pd
 import seaborn as sns
+from scipy import stats
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -23,6 +24,7 @@ def plot_alpha_box_plots(df, alpha):
     sns.boxplot(x="alpha_achieved_" + str(alpha) + "_bins", y="errors_pos", data=df)
     plt.xlabel("Alpha " + str(alpha) + " achieved joint positions (radians)")
     plt.ylabel("Errors (mm)")
+    plt.ylim([0, 5])
     plt.show()
 
 def plot_B_box_plots(df, alpha):
@@ -36,9 +38,10 @@ if __name__ == '__main__':
     project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
     #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
     #names = ['constrain_rotation/tro_constrain_3', 'free_rotation/tro_free_3']
-    #names = ['constrain_rotation/tro_constrain_3']
-    names = ['free_rotation/tro_free_3']
-    #names = ['two_tubes/tro_two_systems_2', 'three_tubes/tro_three_systems_0', 'four_tubes/tro_four_systems_0']
+    #names = ['constrain_rotation/icra_constrain_3']
+    #names = ['free_rotation/tro_free_0']
+    names = ['free_rotation/icra_free_3']
+    #names = ['four_tubes/tro_four_systems_0']
     system_idx = None
     exp = 0
     if system_idx is not None:
@@ -53,13 +56,16 @@ if __name__ == '__main__':
 
     plot_goal_distance_scatter = False
     plot_rot_joints_box_plot = False
-    wrap_angles = False
+    wrap_angles = True
     plot_ext_joints_box_plot = False
     plot_3d_desired_workspace = False
     plot_3d_achieved_workspace = False
-    error_threshold = 5
+    error_threshold = 2
 
     if plot_goal_distance_scatter:
+        slope, intercept, r_value, p_value, std_err = stats.linregress(proc_df['goal_dist'], proc_df['errors_pos'])
+        print("slope: ", slope)
+        print("intercept: ", intercept)
         sns.regplot(x='goal_dist', y='errors_pos', data=proc_df, ci=None, scatter_kws={"s": 10})
         plt.show()
 

@@ -78,7 +78,7 @@ class GoalTolerance(object):
 class CtrGenericEnv(gym.GoalEnv):
     def __init__(self, ctr_systems, action_length_limit, action_rotation_limit, max_episode_steps, n_substeps,
                  goal_tolerance_parameters, noise_parameters, constrain_alpha, relative_q, initial_q, resample_joints,
-                 render, evaluation, num_systems=None, select_systems=None):
+                 render, evaluation, num_systems=None, select_systems=None, length_based_sample=False):
         if num_systems == None:
             self.num_systems = len(ctr_systems.keys())
         else:
@@ -108,7 +108,7 @@ class CtrGenericEnv(gym.GoalEnv):
                 self.systems.append(tubes)
 
         self.num_tubes = len(self.systems[0])
-
+        self.length_based_sample = length_based_sample
         self.initial_q = initial_q
 
         self.action_length_limit = action_length_limit
@@ -142,7 +142,18 @@ class CtrGenericEnv(gym.GoalEnv):
     def reset(self, goal=None, system_idx=None):
         self.t = 0
         if system_idx is None:
-            self.system_idx = np.random.randint(self.num_systems)
+            if self.length_based_sample:
+                # Get overall length
+                overall_length = 0
+                inner_lengths = []
+                for system in self.systems:
+                    # Innermost tube length
+                    overall_length += system[0].L
+                    inner_lengths.append(system[0].L)
+                pvals = np.array(inner_lengths) / overall_length
+                self.system_idx = np.where(np.random.multinomial(1, pvals) == 1)[0][0]
+            else:
+                self.system_idx = np.random.randint(self.num_systems)
         else:
             self.system_idx = system_idx
         self.r_df = None

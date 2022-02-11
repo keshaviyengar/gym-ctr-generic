@@ -89,8 +89,9 @@ if __name__ == '__main__':
 
     project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
     #names = ['constrain_rotation/icra_const_pro_3']
-    #names = ['free_rotation/icra_free_3']
-    names = ['constrain_rotation/tro_constrain_3']
+    #names = ['free_rotation/icra_free_0']
+    names = ['free_rotation/tro_free_0']
+    #names = ['constrain_rotation/tro_constrain_3']
 
     for exp, name in enumerate(names):
         system_idx = None
@@ -105,8 +106,8 @@ if __name__ == '__main__':
 
         # Env and model names and paths
         env_id = "CTR-Generic-Reach-v0"
-        env_kwargs = {'evaluation': True, 'relative_q': True, 'resample_joints': True, 'constrain_alpha': True,
-                      'num_systems': 1, 'select_systems': [3],
+        env_kwargs = {'evaluation': True, 'relative_q': True, 'resample_joints': True, 'constrain_alpha': False,
+                      'num_systems': 1, 'select_systems': [0],
                       'goal_tolerance_parameters': {'inc_tol_obs': True, 'initial_tol': 0.020, 'final_tol': 0.001,
                                                     'N_ts': 200000, 'function': 'constant', 'set_tol': 0.001}
                       }

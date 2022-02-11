@@ -89,7 +89,8 @@ register(
         'resample_joints': False,
         'render': False,
         'evaluation': False,
-        'num_systems': 3
+        'num_systems': 3,
+        'length_based_sample': False
     },
     max_episode_steps=150
 )
