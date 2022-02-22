@@ -107,6 +107,7 @@ class CtrGenericEnv(gym.GoalEnv):
                     tubes.append(Tube(**tube_args))
                 self.systems.append(tubes)
 
+        self.select_systems = select_systems
         self.num_tubes = len(self.systems[0])
         self.length_based_sample = length_based_sample
         self.initial_q = initial_q
@@ -202,12 +203,15 @@ class CtrGenericEnv(gym.GoalEnv):
             info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
                     'errors_pos': np.linalg.norm(desired_goal - achieved_goal),
                     'errors_orient': 0,
-                    'system_idx': self.system_idx,
+                    'system_idx': self.select_systems[self.system_idx],
                     'position_tolerance': self.goal_tol_obj.get_tol(),
                     'orientation_tolerance': 0,
                     'achieved_goal': achieved_goal,
                     'desired_goal': desired_goal, 'starting_position': self.starting_position,
                     'q_desired': self.desired_q, 'q_achieved': self.rep_obj.get_q(), 'q_starting': self.starting_joints}
+            # During evaluation, want to keep final joint configuration for next episode for path following
+            if done:
+                self.initial_q = self.rep_obj.get_q()
         else:
             info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
                     'error': np.linalg.norm(desired_goal - achieved_goal)}

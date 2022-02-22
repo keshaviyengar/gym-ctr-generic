@@ -16,6 +16,7 @@ def process_files_and_get_dataframes(all_files, names):
         sg = np.array([df['starting_position_x'], df['starting_position_y'], df['starting_position_z']])
         df['errors_pos'] = np.linalg.norm(np.transpose(ag - dg), axis=1) * 1000
         df['goal_dist'] = np.linalg.norm(np.transpose(sg - dg), axis=1) * 1000
+        df['success'] = df['errors_pos'] < 1.0
         df["experiment"] = name
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True, sort=False)
@@ -35,14 +36,15 @@ def plot_B_box_plots(df, alpha):
 
 
 if __name__ == '__main__':
-    project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
-    #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
+    #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
+    project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
     #names = ['constrain_rotation/tro_constrain_3', 'free_rotation/tro_free_3']
     #names = ['constrain_rotation/icra_constrain_3']
     #names = ['free_rotation/tro_free_0']
-    names = ['free_rotation/icra_free_3']
-    #names = ['four_tubes/tro_four_systems_0']
-    system_idx = None
+    #names = ['free_rotation/icra_free_3']
+    names = ['four_systems/tro_four_systems_0']
+    #names = ['two_systems/tro_two_systems_4']
+    system_idx = 2
     exp = 0
     if system_idx is not None:
         eval_file_path = project_folder + names[exp] + "/evaluations_" + str(system_idx) + ".csv"
@@ -55,6 +57,7 @@ if __name__ == '__main__':
     print("success rate: " + str(proc_df[proc_df["errors_pos"] < 1].shape))
 
     plot_goal_distance_scatter = False
+    plot_goal_distance_success = True
     plot_rot_joints_box_plot = False
     wrap_angles = True
     plot_ext_joints_box_plot = False
@@ -67,6 +70,10 @@ if __name__ == '__main__':
         print("slope: ", slope)
         print("intercept: ", intercept)
         sns.regplot(x='goal_dist', y='errors_pos', data=proc_df, ci=None, scatter_kws={"s": 10})
+        plt.show()
+
+    if plot_goal_distance_success:
+        g = sns.jointplot(x="goal_dist", y="errors_pos", data=proc_df, kind="hex")
         plt.show()
 
     num_bins = 10

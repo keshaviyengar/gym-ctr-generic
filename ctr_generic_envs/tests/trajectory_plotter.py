@@ -51,18 +51,33 @@ def plot_trajectory(achived_goals, desired_goals, r1, r2, r3):
     fig = plt.figure()
     ax = plt.axes(projection='3d')
     ax.set_box_aspect([1,1,1])
-    ax.plot3D(r1[0][:,0], r1[0][:,1], r1[0][:,2], linewidth=2.0)
-    ax.plot3D(r2[0][:,0], r2[0][:,1], r2[0][:,2], linewidth=3.0)
-    ax.plot3D(r3[0][:,0], r3[0][:,1], r3[0][:,2], linewidth=4.0)
-    ag = np.array(achived_goals)
-    dg = np.array(desired_goals)
-    ax.plot3D(ag[:,0], ag[:,1], ag[:,2], marker='.', linestyle=':' )
+    ax.plot3D(r1[0][:,0] * 1000, r1[0][:,1] * 1000, r1[0][:,2] * 1000, linewidth=2.0)
+    ax.plot3D(r2[0][:,0] * 1000, r2[0][:,1] * 1000, r2[0][:,2] * 1000, linewidth=3.0)
+    ax.plot3D(r3[0][:,0] * 1000, r3[0][:,1] * 1000, r3[0][:,2] * 1000, linewidth=4.0)
+    ag = np.array(achived_goals) * 1000
+    dg = np.array(desired_goals) * 1000
+    ax.plot3D(ag[:,0], ag[:,1], ag[:,2], marker='.', linestyle=':', label='achieved')
     ax.plot3D(dg[0,0], dg[0,1], dg[0,2], marker='.', linestyle=':' )
-    ax.plot3D(r1[-1][:,0], r1[-1][:,1], r1[-1][:,2], linewidth=2.0)
-    ax.plot3D(r2[-1][:,0], r2[-1][:,1], r2[-1][:,2], linewidth=3.0)
-    ax.plot3D(r3[-1][:,0], r3[-1][:,1], r3[-1][:,2], linewidth=4.0)
+    ax.plot3D(r1[-1][:,0] * 1000, r1[-1][:,1] * 1000, r1[-1][:,2] * 1000, linewidth=2.0)
+    ax.plot3D(r2[-1][:,0] * 1000, r2[-1][:,1] * 1000, r2[-1][:,2] * 1000, linewidth=3.0)
+    ax.plot3D(r3[-1][:,0] * 1000, r3[-1][:,1] * 1000, r3[-1][:,2] * 1000, linewidth=4.0)
+    ax.set_xlabel("X (mm)")
+    ax.set_ylabel("Y (mm)")
+    ax.set_zlabel("Z (mm)")
     return fig, ax
 
+def plot_path_only(achieved_goals, desired_goals):
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.set_box_aspect([1,1,1])
+    ag = np.array(achieved_goals) * 1000
+    dg = np.array(desired_goals) * 1000
+    ax.plot3D(ag[:,0], ag[:,1], ag[:,2], marker='.', linestyle=':', label='achieved')
+    ax.plot3D(dg[0,0], dg[0,1], dg[0,2], marker='.', linestyle=':' )
+    ax.set_xlabel("X (mm)")
+    ax.set_ylabel("Y (mm)")
+    ax.set_zlabel("Z (mm)")
+    return fig, ax
 
 if __name__ == '__main__':
     model_path = "/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/free_rot/p_256_units/her/CTR-Generic-Reach-v0_1/best_model.zip"

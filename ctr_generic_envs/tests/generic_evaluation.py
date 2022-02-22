@@ -43,7 +43,7 @@ def evaluation(env, model, num_episodes, output_path, select_systems):
             # Run random episodes and save sequence of actions and states to plot in matlab
             episode_reward = 0
             ep_len = 0
-            obs = env.reset(**{'system_idx' :system_idx})
+            obs = env.reset(**{'system_idx' : np.where(system_idx == np.array(select_systems))[0][0]})
             # Set system idx if not None
             while True:
                 action, _ = model.predict(obs, deterministic=True)
@@ -89,11 +89,12 @@ def evaluation(env, model, num_episodes, output_path, select_systems):
 
 
 if __name__ == '__main__':
-    gen_model_path = "/her/CTR-Generic-Reach-v0_1/best_model.zip"
+    #gen_model_path = "/her/CTR-Generic-Reach-v0_1/best_model.zip"
+    gen_model_path = "/her/CTR-Generic-Reach-v0_1/CTR-Generic-Reach-v0.zip"
 
     project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
-    name = 'three_systems/tro_three_systems_1'
-    selected_systems = [0,1,3]
+    name = 'four_systems/tro_four_systems_sample'
+    selected_systems = [0,1,2,3]
 
     model_path = project_folder + name + gen_model_path
     output_path = project_folder + name

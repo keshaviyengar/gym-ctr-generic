@@ -38,11 +38,11 @@ def polygon_traj(num_points, points):
 
     return np.concatenate(x), np.concatenate(y), np.concatenate(z)
 
-def helix_traj(num_points, num_revs, R, a):
+def helix_traj(num_points, num_revs, R, a, xyz=[0,0,0]):
     t = np.linspace(0, num_revs * 2 * np.pi, num_points)
-    x = R * np.cos(t)
-    y = R * np.sin(t)
-    z = a * t
+    x = R * np.cos(t) + xyz[0]
+    y = R * np.sin(t) + xyz[1]
+    z = a * t + xyz[2]
     return x,y,z
 
 if __name__ == '__main__':

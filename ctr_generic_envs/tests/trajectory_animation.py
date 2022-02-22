@@ -46,42 +46,46 @@ def run_episode(env, agent):
             break
     return achieved_goals, desired_goals, r1, r2, r3
 
-def update_animation(num, tube1, tube2, tube3, ag_p, achieved_goals, r1, r2, r3):
-    tube1.set_data(r1[num][:,0], r1[num][:,1])
-    tube1.set_3d_properties(r1[num][:,2])
+def update_animation(num, ax, tube1, tube2, tube3, ag_p, dg_p, achieved_goals, desired_goals, r1, r2, r3):
+    tube1.set_data(r1[num][:,0] * 1000, r1[num][:,1] * 1000)
+    tube1.set_3d_properties(r1[num][:,2] * 1000)
 
-    tube2.set_data(r2[num][:,0], r2[num][:,1])
-    tube2.set_3d_properties(r2[num][:,2])
+    tube2.set_data(r2[num][:,0] * 1000, r2[num][:,1] * 1000)
+    tube2.set_3d_properties(r2[num][:,2] * 1000)
 
-    tube3.set_data(r3[num][:,0], r3[num][:,1])
-    tube3.set_3d_properties(r3[num][:,2])
+    tube3.set_data(r3[num][:,0] * 1000, r3[num][:,1] * 1000)
+    tube3.set_3d_properties(r3[num][:,2] * 1000)
 
     ag_p.set_data(achieved_goals[:num,0], achieved_goals[:num,1])
     ag_p.set_3d_properties(achieved_goals[:num,2])
-    return [tube1, tube2, tube3, ag_p]
 
+    dg_p.set_data(desired_goals[:num,0], desired_goals[:num,1])
+    dg_p.set_3d_properties(desired_goals[:num,2])
+
+    ax.view_init(elev=10., azim=num)
+    return [tube1, tube2, tube3, ag_p, dg_p]
 
 def animate_trajectory(achieved_goals, desired_goals, r1, r2 ,r3):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     axis_lims = 0.15
-    ax.set_xlim3d([-axis_lims, axis_lims])
-    ax.set_xlabel('X')
-
-    ax.set_ylim3d([-axis_lims, axis_lims])
-    ax.set_ylabel('Y')
-
-    ax.set_zlim3d([0.0, 2 * axis_lims])
-    ax.set_zlabel('Z')
-    ag = np.array(achieved_goals)
-    dg = np.array(desired_goals)
-    tube1, = ax.plot3D(r1[0][:, 0], r1[0][:, 1], r1[0][:, 2], linewidth=2.0)
-    tube2, = ax.plot3D(r2[0][:, 0], r2[0][:, 1], r2[0][:, 2], linewidth=3.0)
-    tube3, = ax.plot3D(r3[0][:, 0], r3[0][:, 1], r3[0][:, 2], linewidth=4.0)
+    ax.set_box_aspect([1,1,1])
+    #ax.set_xlim3d([-axis_lims, axis_lims])
+    #ax.set_ylim3d([-axis_lims, axis_lims])
+    #ax.set_zlim3d([0.0, 2 * axis_lims])
+    ax.set_xlabel("X (mm)")
+    ax.set_ylabel("Y (mm)")
+    ax.set_zlabel("Z (mm)")
+    ag = np.array(achieved_goals) * 1000
+    dg = np.array(desired_goals) * 1000
+    tube1, = ax.plot3D(r1[0][:, 0] * 1000, r1[0][:, 1] * 1000, r1[0][:, 2] * 1000, linewidth=2.0)
+    tube2, = ax.plot3D(r2[0][:, 0] * 1000, r2[0][:, 1] * 1000, r2[0][:, 2] * 1000, linewidth=3.0)
+    tube3, = ax.plot3D(r3[0][:, 0] * 1000, r3[0][:, 1] * 1000, r3[0][:, 2] * 1000, linewidth=4.0)
     ag_p, = ax.plot3D(ag[0, 0], ag[0, 1], ag[0, 2], marker='.', linestyle=':')
-    ax.plot3D(dg[0, 0], dg[0, 1], dg[0, 2], color='green', marker='o')
+    dg_p, = ax.plot3D(dg[0, 0], dg[0, 1], dg[0, 2], marker='.', linestyle=':')
 
-    ani = animation.FuncAnimation(fig, update_animation, len(achieved_goals), fargs=[tube1, tube2, tube3, ag_p, ag, r1, r2, r3])
+    ani = animation.FuncAnimation(fig, update_animation, len(achieved_goals), fargs=[ax, tube1, tube2, tube3,
+                                                                                     ag_p, dg_p, ag, dg, r1, r2, r3])
     return ani
 
 if __name__ == '__main__':
