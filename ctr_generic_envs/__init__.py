@@ -90,7 +90,8 @@ register(
         'render': False,
         'evaluation': False,
         'num_systems': 3,
-        'length_based_sample': False
+        'length_based_sample': False,
+        'domain_rand': 0.0
     },
     max_episode_steps=150
 )

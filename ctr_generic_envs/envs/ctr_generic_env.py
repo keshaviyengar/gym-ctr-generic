@@ -7,21 +7,6 @@ from ctr_generic_envs.envs.exact_model import ExactModel
 from ctr_generic_envs.envs.CTR_Python import Tube
 
 
-class TubeParameters(object):
-    def __init__(self, length, length_curved, outer_diameter, inner_diameter, stiffness, torsional_stiffness,
-                 x_curvature, y_curvature):
-        self.L = length
-        self.L_s = length - length_curved
-        self.L_c = length_curved
-        # Exact model
-        self.J = (np.pi * (pow(outer_diameter, 4) - pow(inner_diameter, 4))) / 32
-        self.I = (np.pi * (pow(outer_diameter, 4) - pow(inner_diameter, 4))) / 64
-        self.E = stiffness
-        self.G = torsional_stiffness
-        self.U_x = x_curvature
-        self.U_y = y_curvature
-
-
 class GoalTolerance(object):
     def __init__(self, goal_tolerance_parameters):
         self.goal_tolerance_parameters = goal_tolerance_parameters
@@ -74,11 +59,10 @@ class GoalTolerance(object):
     def decay_function(self):
         return self.a * np.power(1 - self.r, self.training_step)
 
-# TODO: Selecting tube systems
 class CtrGenericEnv(gym.GoalEnv):
     def __init__(self, ctr_systems, action_length_limit, action_rotation_limit, max_episode_steps, n_substeps,
                  goal_tolerance_parameters, noise_parameters, constrain_alpha, relative_q, initial_q, resample_joints,
-                 render, evaluation, num_systems=None, select_systems=None, length_based_sample=False):
+                 render, evaluation, num_systems=None, select_systems=None, length_based_sample=False, domain_rand=0.0):
         if num_systems == None:
             self.num_systems = len(ctr_systems.keys())
         else:
@@ -111,6 +95,7 @@ class CtrGenericEnv(gym.GoalEnv):
         self.num_tubes = len(self.systems[0])
         self.length_based_sample = length_based_sample
         self.initial_q = initial_q
+        self.domain_rand = domain_rand
 
         self.action_length_limit = action_length_limit
         self.action_rotation_limit = action_rotation_limit
@@ -142,6 +127,8 @@ class CtrGenericEnv(gym.GoalEnv):
 
     def reset(self, goal=None, system_idx=None):
         self.t = 0
+        # By default domain_rand is 0.0 so no randomization is applied
+        self.model.randomize_parameters(self.domain_rand)
         if system_idx is None:
             if self.length_based_sample:
                 # Get overall length

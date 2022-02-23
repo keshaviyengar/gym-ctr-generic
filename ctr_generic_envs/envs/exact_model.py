@@ -4,19 +4,47 @@ from scipy.integrate import odeint, solve_ivp
 
 from ctr_generic_envs.envs.CTR_Python import Segment
 from ctr_generic_envs.envs.CTR_Python import CTR_Model
+from ctr_generic_envs.envs.CTR_Python import Tube
 
 from mpi4py import MPI
 
+from copy import deepcopy
+
+def sample_parameters(tube_parameters, randomization):
+    L = randomize_value(tube_parameters.L, randomization)
+    L_c = randomize_value(tube_parameters.L_c, randomization)
+    diameter_inner = randomize_value(tube_parameters.diameter_inner, randomization)
+    diameter_outer = randomize_value(tube_parameters.diameter_outer, randomization)
+    stiffness = randomize_value(tube_parameters.E, randomization)
+    torsional_stiffness = randomize_value(tube_parameters.G, randomization)
+    x_curvature = randomize_value(tube_parameters.U_x, randomization)
+    y_curvature = randomize_value(tube_parameters.U_y, 0.0)
+
+    new_parameters = Tube(L, L_c, diameter_inner, diameter_outer, stiffness, torsional_stiffness, x_curvature,
+                          y_curvature)
+    return new_parameters
+
+def randomize_value(value, randomization):
+    return np.random.uniform(value - value * randomization, value + value * randomization)
+
+
 class ExactModel(object):
     def __init__(self, systems):
-        self.systems = systems
+        self.systems = deepcopy(systems)
+        self.curr_systems = deepcopy(systems)
         self.num_tubes = len(self.systems[0])
-
         self.r = []
         self.r1 = []
         self.r2 = []
         self.r3 = []
         self.r_transforms = []
+
+    # Randomize parameters by a percentage
+    def randomize_parameters(self, randomization):
+        for i in range(len(self.curr_systems)):
+            self.curr_systems[i][0] = sample_parameters(self.systems[i][0], randomization)
+            self.curr_systems[i][1] = sample_parameters(self.systems[i][1], randomization)
+            self.curr_systems[i][2] = sample_parameters(self.systems[i][2], randomization)
 
     def forward_kinematics(self, q, system_idx, **kwargs):
         """
@@ -36,7 +64,8 @@ class ExactModel(object):
         q_0 = np.array([0, 0, 0, 0, 0, 0])
         beta = q[0:3] + q_0[0:3]
 
-        segment = Segment(self.systems[system_idx][0], self.systems[system_idx][1], self.systems[system_idx][2], beta)
+        segment = Segment(self.curr_systems[system_idx][0], self.curr_systems[system_idx][1],
+                          self.curr_systems[system_idx][2], beta)
 
         r_0_ = np.array([0, 0, 0]).reshape(3, 1)
         alpha_1_0 = q[3] + q_0[3]
@@ -103,9 +132,9 @@ class ExactModel(object):
 
     # CTR model
     def ctr_model(self, system_idx, uz_0, alpha_0, r_0, R_0, segmentation, beta):
-        tube1 = self.systems[system_idx][0]
-        tube2 = self.systems[system_idx][1]
-        tube3 = self.systems[system_idx][2]
+        tube1 = self.curr_systems[system_idx][0]
+        tube2 = self.curr_systems[system_idx][1]
+        tube3 = self.curr_systems[system_idx][2]
         Length = np.empty(0)
         r = np.empty((0, 3))
         u_z = np.empty((0, 3))

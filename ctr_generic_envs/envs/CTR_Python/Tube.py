@@ -7,8 +7,10 @@ class Tube:
     def __init__(self, length, length_curved, diameter_inner, diameter_outer, stiffness, torsional_stiffness,
                  x_curvature, y_curvature):
         self.L = length
-        self.L_s = length - length_curved
         self.L_c = length_curved
+        self.L_s = length - length_curved
+        self.diameter_inner = diameter_inner
+        self.diameter_outer = diameter_outer
         self.J = (pi * (pow(diameter_outer, 4) - pow(diameter_inner, 4))) / 32
         self.I = (pi * (pow(diameter_outer, 4) - pow(diameter_inner, 4))) / 64
         self.E = stiffness
