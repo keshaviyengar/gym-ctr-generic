@@ -11,21 +11,22 @@ from mpi4py import MPI
 from copy import deepcopy
 
 def sample_parameters(tube_parameters, randomization):
-    L = randomize_value(tube_parameters.L, randomization)
-    L_c = randomize_value(tube_parameters.L_c, randomization)
+    L = randomize_value(tube_parameters.L, 0)
+    L_c = randomize_value(tube_parameters.L_c, 0)
     diameter_inner = randomize_value(tube_parameters.diameter_inner, randomization)
     diameter_outer = randomize_value(tube_parameters.diameter_outer, randomization)
     stiffness = randomize_value(tube_parameters.E, randomization)
     torsional_stiffness = randomize_value(tube_parameters.G, randomization)
     x_curvature = randomize_value(tube_parameters.U_x, randomization)
-    y_curvature = randomize_value(tube_parameters.U_y, 0.0)
+    y_curvature = randomize_value(tube_parameters.U_y, 0)
 
     new_parameters = Tube(L, L_c, diameter_inner, diameter_outer, stiffness, torsional_stiffness, x_curvature,
                           y_curvature)
     return new_parameters
 
 def randomize_value(value, randomization):
-    return np.random.uniform(value - value * randomization, value + value * randomization)
+    sampled_value = np.random.uniform(value - value * randomization, value + value * randomization)
+    return sampled_value
 
 
 class ExactModel(object):
