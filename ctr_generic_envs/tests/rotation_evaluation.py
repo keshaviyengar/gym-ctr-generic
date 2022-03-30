@@ -38,10 +38,7 @@ def evaluation(env, model, num_episodes, output_path, system_idx=None):
         # Run random episodes and save sequence of actions and states to plot in matlab
         episode_reward = 0
         ep_len = 0
-        if system_idx is None:
-            obs = env.reset()
-        else:
-            obs = env.reset({'system_idx': system_idx})
+        obs = env.reset()
         # Set system idx if not None
         while True:
             action, _ = model.predict(obs, deterministic=True)
@@ -86,31 +83,28 @@ def evaluation(env, model, num_episodes, output_path, system_idx=None):
 
 if __name__ == '__main__':
     gen_model_path = "/her/CTR-Generic-Reach-v0_1/best_model.zip"
+    #gen_model_path = "/her/CTR-Generic-Reach-v0_1/CTR-Generic-Reach-v0.zip"
 
     project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
-    #names = ['constrain_rotation/icra_const_pro_3']
-    #names = ['free_rotation/icra_free_0']
-    names = ['free_rotation/tro_free_0']
-    #names = ['constrain_rotation/tro_constrain_3']
+    system_idx = 2
+    constrain = False
+    domain_rand = 0.0
+    #name = 'free_rotation/tro_free_' + str(system_idx)
+    name = 'free_rotation/tro_domain_rand_' + str(system_idx)
+    #name = 'free_rotation/tro_free_' + str(system_idx)
 
-    for exp, name in enumerate(names):
-        system_idx = None
+    model_path = project_folder + name + gen_model_path
+    output_path = project_folder + name + "/evaluations.csv"
 
-        model_path = project_folder + names[exp] + gen_model_path
-        if system_idx is not None:
-            output_path = project_folder + name + "/evaluations_" + str(system_idx) + ".csv"
-        else:
-            output_path = project_folder + name + "/evaluations.csv"
+    num_episodes = 1000
 
-        num_episodes = 1000
-
-        # Env and model names and paths
-        env_id = "CTR-Generic-Reach-v0"
-        env_kwargs = {'evaluation': True, 'relative_q': True, 'resample_joints': True, 'constrain_alpha': False,
-                      'num_systems': 1, 'select_systems': [0],
-                      'goal_tolerance_parameters': {'inc_tol_obs': True, 'initial_tol': 0.020, 'final_tol': 0.001,
-                                                    'N_ts': 200000, 'function': 'constant', 'set_tol': 0.001}
-                      }
-        env, model = load_agent(env_id, env_kwargs, model_path)
-        print("output path: " + output_path)
-        evaluation(env, model, num_episodes, output_path, system_idx=system_idx)
+    # Env and model names and paths
+    env_id = "CTR-Generic-Reach-v0"
+    env_kwargs = {'evaluation': True, 'relative_q': True, 'resample_joints': True, 'constrain_alpha': constrain,
+                  'num_systems': 1, 'select_systems': [system_idx], 'domain_rand': domain_rand,
+                  'goal_tolerance_parameters': {'inc_tol_obs': True, 'initial_tol': 0.020, 'final_tol': 0.001,
+                                                'N_ts': 200000, 'function': 'constant', 'set_tol': 0.001}
+                  }
+    env, model = load_agent(env_id, env_kwargs, model_path)
+    print("output path: " + output_path)
+    evaluation(env, model, num_episodes, output_path, system_idx=system_idx)

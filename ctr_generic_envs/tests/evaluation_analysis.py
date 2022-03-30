@@ -36,15 +36,13 @@ def plot_B_box_plots(df, alpha):
 
 
 if __name__ == '__main__':
-    #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
-    project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
-    #names = ['constrain_rotation/tro_constrain_3', 'free_rotation/tro_free_3']
-    #names = ['constrain_rotation/icra_constrain_3']
-    #names = ['free_rotation/tro_free_0']
-    #names = ['free_rotation/icra_free_3']
-    names = ['four_systems/tro_four_systems_0']
-    #names = ['two_systems/tro_two_systems_4']
-    system_idx = 2
+    project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/rotation_experiments/'
+    #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/old_rotation_experiments/rotation_experiments/'
+    #project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
+    #names = ['free_rotation/tro_free_0', 'free_rotation/tro_free_1', 'free_rotation/tro_free_2', 'free_rotation/tro_free_3']
+    #names = ['constrain_rotation/tro_constrain_0', 'constrain_rotation/tro_constrain_1', 'constrain_rotation/tro_constrain_2', 'constrain_rotation/tro_constrain_3']
+    names = ['free_rotation/tro_domain_rand_2']
+    system_idx = None
     exp = 0
     if system_idx is not None:
         eval_file_path = project_folder + names[exp] + "/evaluations_" + str(system_idx) + ".csv"
@@ -57,13 +55,30 @@ if __name__ == '__main__':
     print("success rate: " + str(proc_df[proc_df["errors_pos"] < 1].shape))
 
     plot_goal_distance_scatter = False
-    plot_goal_distance_success = True
+    plot_goal_distance_success = False
     plot_rot_joints_box_plot = False
     wrap_angles = True
     plot_ext_joints_box_plot = False
-    plot_3d_desired_workspace = False
     plot_3d_achieved_workspace = False
     error_threshold = 2
+
+    plot_polar_error = True
+
+    if plot_polar_error:
+        fig = plt.figure(figsize=(5,5), dpi=100)
+        sns.set(font_scale=2.0)
+        sns.set_style(style='white')
+        ax = fig.add_subplot(projection='polar', xlim=(-180,180))
+        ax.scatter(proc_df['alpha_achieved_1'], proc_df['errors_pos'], s=20, c=proc_df['errors_pos'], cmap='cividis',
+                   vmin=0, vmax=35)
+        ax.text(np.deg2rad(80), 25, 'Error (mm)',
+                rotation=90, ha='center', va='center', fontsize=17)
+        ax.set_thetamin(-180.0)
+        ax.set_thetamax(180.0)
+        ax.set_rmax(40)
+        ax.set_rticks([20, 40])
+        ax.set_thetagrids(range(-180, 180, 45))
+        plt.show()
 
     if plot_goal_distance_scatter:
         slope, intercept, r_value, p_value, std_err = stats.linregress(proc_df['goal_dist'], proc_df['errors_pos'])
@@ -101,63 +116,42 @@ if __name__ == '__main__':
             plot_B_box_plots(proc_df, beta)
 
     # 3D workspace plots
-    if plot_3d_desired_workspace:
-        fig = plt.figure()
-        ax3D = fig.add_subplot(1, 2, 1, projection='3d')
-        ax3D.scatter(proc_df['desired_goal_x'] * 1000, proc_df['desired_goal_y'] * 1000, proc_df['desired_goal_z'] * 1000,
-                     c=proc_df['errors_pos'])
-        ax3D.set_xlabel("X (mm)")
-        ax3D.set_ylabel("Y (mm)")
-        ax3D.set_zlabel("Z (mm)")
-        axis_lims = 0.075 * 1000
-        ax3D.set_xlim3d([-axis_lims, axis_lims])
-        ax3D.set_ylim3d([-axis_lims, axis_lims])
-        ax3D.set_zlim3d([0.0, 2 * axis_lims])
-        ax3D.set_title("Desired goals with Errors")
-        ax3D = fig.add_subplot(1, 2, 2, projection='3d')
-        proc_df_tol = proc_df[proc_df['errors_pos'] > error_threshold]
-        p = ax3D.scatter(proc_df_tol['desired_goal_x'] * 1000, proc_df_tol['desired_goal_y'] * 1000,
-                         proc_df_tol['desired_goal_z'] * 1000,
-                     c=proc_df_tol['errors_pos'])
-        ax3D.set_xlabel("X (mm)")
-        ax3D.set_ylabel("Y (mm)")
-        ax3D.set_zlabel("Z (mm)")
-        ax3D.set_xlim3d([-axis_lims, axis_lims])
-        ax3D.set_ylim3d([-axis_lims, axis_lims])
-        ax3D.set_zlim3d([0.0, 2 * axis_lims])
-        ax3D.set_title("Desired goals with Errors > " + str(error_threshold) + " mm")
-        fig.subplots_adjust(right=0.8)
-        cbar_ax = fig.add_axes([0.9, 0.25, 0.01, 0.5])
-        fig.colorbar(p, cax=cbar_ax)
-        plt.show()
-
-    # 3D workspace plots
     if plot_3d_achieved_workspace:
-        fig = plt.figure()
+        fig = plt.figure(figsize=(10,5), dpi=150)
+        sns.set(font_scale=1.2)
+        sns.set_style(style='white')
         ax3D = fig.add_subplot(1, 2, 1, projection='3d')
         ax3D.scatter(proc_df['achieved_goal_x'] * 1000, proc_df['achieved_goal_y'] * 1000, proc_df['achieved_goal_z'] * 1000,
-                     c=proc_df['errors_pos'], s=5)
+                     c=proc_df['errors_pos'], s=5, vmin=0, vmax=35, cmap='cividis')
         ax3D.set_xlabel("X (mm)")
         ax3D.set_ylabel("Y (mm)")
         ax3D.set_zlabel("Z (mm)")
         axis_lims = 0.075 * 1000
         ax3D.set_xlim3d([-axis_lims, axis_lims])
+        ax3D.set_xticks([-50, 0, 50])
         ax3D.set_ylim3d([-axis_lims, axis_lims])
+        ax3D.set_yticks([-50, 0, 50])
         ax3D.set_zlim3d([0.0, 2 * axis_lims])
-        ax3D.set_title("Achieved goals with Errors")
+        ax3D.set_zticks([0, 50, 100, 150])
+        ax3D.set_title("All Errors")
+
         ax3D = fig.add_subplot(1, 2, 2, projection='3d')
         proc_df_tol = proc_df[proc_df['errors_pos'] > error_threshold]
         p = ax3D.scatter(proc_df_tol['achieved_goal_x'] * 1000, proc_df_tol['achieved_goal_y'] * 1000,
                          proc_df_tol['achieved_goal_z'] * 1000,
-                         c=proc_df_tol['errors_pos'], s=5)
+                         c=proc_df_tol['errors_pos'], s=20, vmin=0, vmax=35, cmap='cividis')
         ax3D.set_xlabel("X (mm)")
         ax3D.set_ylabel("Y (mm)")
         ax3D.set_zlabel("Z (mm)")
         ax3D.set_xlim3d([-axis_lims, axis_lims])
+        ax3D.set_xticks([-50, 0, 50])
         ax3D.set_ylim3d([-axis_lims, axis_lims])
+        ax3D.set_yticks([-50, 0, 50])
         ax3D.set_zlim3d([0.0, 2 * axis_lims])
-        ax3D.set_title("Achieved goals with Errors > " + str(error_threshold) + " mm")
+        ax3D.set_zticks([0, 50, 100, 150])
+        ax3D.set_title("Errors > " + str(error_threshold) + " mm")
         fig.subplots_adjust(right=0.8)
         cbar_ax = fig.add_axes([0.9, 0.25, 0.01, 0.5])
         fig.colorbar(p, cax=cbar_ax)
+
         plt.show()

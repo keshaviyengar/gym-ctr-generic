@@ -63,7 +63,7 @@ class KeyboardControl(object):
                 self.rotation_actions = np.zeros(3)
 
     def run(self):
-        obs = self.env.reset({})
+        obs = self.env.reset()
         while not self.exit:
             self.action[:3] = self.extension_actions
             self.action[3:] = self.rotation_actions

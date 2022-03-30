@@ -7,6 +7,9 @@ from stable_baselines.her.utils import HERGoalEnvWrapper
 
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
+plt.rcParams['font.serif'] = ['Times New Roman']
+plt.rcParams['font.size'] = 15
+
 # Given joint values and system, this script will plot the robot shape
 
 
@@ -18,19 +21,18 @@ if __name__ == '__main__':
     ctr_kine_model = ExactModel(ctr_systems)
 
     fig = plt.figure()
-    ax = plt.axes(projection='3d')
-    ax.set_box_aspect([1,1,1])
-    q = np.array([0,0,0,0,0,0])
+    ax = plt.axes()
+    q = np.array([0,0,0,np.pi/2,np.pi/2,np.pi/2])
     for system_idx in range(0, len(ctr_systems)):
         ee_pos = ctr_kine_model.forward_kinematics(q, system_idx)
         r1, r2, r3 = ctr_kine_model.get_rs()
-        ax.plot3D(r1[:,0] * 1000, r1[:,1] * 1000, r1[:,2] * 1000, linewidth=2.0)
-        ax.plot3D(r2[:,0] * 1000, r2[:,1] * 1000, r2[:,2] * 1000, linewidth=3.0)
-        ax.plot3D(r3[:,0] * 1000, r3[:,1] * 1000, r3[:,2] * 1000, linewidth=4.0)
-        ax.set_xlabel('X (mm)')
-        ax.set_ylabel('Y (mm)')
-        ax.set_zlabel('Z (mm)')
-        ax.set_xlim([-150, 150])
-        ax.set_ylim([-300, 0])
-        ax.set_zlim([0, 300])
+        ax.plot(r1[:,0] * 1000, r1[:,2] * 1000, linewidth=4.0, c=plt.cm.tab20c(system_idx*4), label='System ' + str(system_idx))
+        ax.plot(r2[:,0] * 1000, r2[:,2] * 1000, linewidth=6.0, c=plt.cm.tab20c(system_idx*4 + 1))
+        ax.plot(r3[:,0] * 1000, r3[:,2] * 1000, linewidth=8.0, c=plt.cm.tab20c(system_idx*4 + 2))
+        ax.set_xlabel('$x$ (mm)')
+        ax.set_ylabel('$z$ (mm)')
+        ax.set_xlim([0, 250])
+        ax.set_ylim([0, 300])
+        ax.set_aspect('equal')
+    ax.legend(loc='best')
     plt.show()

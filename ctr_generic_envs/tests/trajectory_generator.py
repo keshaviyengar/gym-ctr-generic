@@ -9,10 +9,6 @@ import matplotlib.pyplot as plt
 
 def circle_traj(num_points, centre_x, centre_y, centre_z, radius):
     t = np.linspace(0, 2*np.pi, num_points)
-    centre_x = 0
-    centre_y = 0
-    centre_z = 0
-    radius = 10
     x = centre_x + (np.cos(t) * radius)
     y = centre_y + (np.sin(t) * radius)
     z = np.zeros_like(t) + centre_z

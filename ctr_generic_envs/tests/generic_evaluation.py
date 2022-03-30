@@ -93,8 +93,9 @@ if __name__ == '__main__':
     gen_model_path = "/her/CTR-Generic-Reach-v0_1/CTR-Generic-Reach-v0.zip"
 
     project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
-    name = 'four_systems/tro_four_systems_sample'
-    selected_systems = [0,1,2,3]
+    name = 'three_systems/tro_three_systems_2'
+    #name = 'four_systems/tro_four_systems_prop'
+    selected_systems = [0,2,3]
 
     model_path = project_folder + name + gen_model_path
     output_path = project_folder + name
@@ -103,7 +104,7 @@ if __name__ == '__main__':
 
     # Env and model names and paths
     env_id = "CTR-Generic-Reach-v0"
-    env_kwargs = {'evaluation': True, 'relative_q': True, 'resample_joints': True, 'constrain_alpha': False,
+    env_kwargs = {'evaluation': True, 'relative_q': True, 'resample_joints': False, 'constrain_alpha': False,
                   'num_systems': len(selected_systems), 'select_systems': selected_systems,
                   'goal_tolerance_parameters': {'inc_tol_obs': True, 'initial_tol': 0.020, 'final_tol': 0.001,
                                                 'N_ts': 200000, 'function': 'constant', 'set_tol': 0.001}
