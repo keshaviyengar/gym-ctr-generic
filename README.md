@@ -23,9 +23,9 @@
 
 
 ## Common errors
-```AttributeError: module 'contextlib' has no attribute 'nullcontext'```
-Install older version (0.15.7) of gym or yse python3.7.
-```ModuleNotFoundError: No module named 'yaml'```
-If a module is missing, install with pip
-DDPG needs MPI
-```pip install mpi4py```
+- ```AttributeError: module 'contextlib' has no attribute 'nullcontext'```
+- Install older version (0.15.7) of gym or yse python3.7.
+- ```ModuleNotFoundError: No module named 'yaml'```
+- If a module is missing, install with pip
+- DDPG needs MPI
+- ```pip install mpi4py```
