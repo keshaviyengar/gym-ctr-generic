@@ -40,10 +40,3 @@ def helix_traj(num_points, num_revs, R, a, xyz=[0,0,0]):
     y = R * np.sin(t) + xyz[1]
     z = a * t + xyz[2]
     return x,y,z
-
-if __name__ == '__main__':
-    x,y,z = helix_traj(100, 6, 1, 1)
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot3D(x, y, z)
-    plt.show()

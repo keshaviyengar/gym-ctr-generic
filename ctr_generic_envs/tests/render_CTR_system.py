@@ -22,17 +22,27 @@ if __name__ == '__main__':
 
     fig = plt.figure()
     ax = plt.axes()
-    q = np.array([0,0,0,np.pi/2,np.pi/2,np.pi/2])
+    q_list = [np.array([0,0,0,np.pi/2,np.pi/2,np.pi/2]),
+         np.array([0, 0, 0, -np.pi / 2, np.pi / 2, np.pi / 2]),
+         np.array([0, 0, 0, np.pi / 2, -np.pi / 2, np.pi / 2]),
+         np.array([0, 0, 0, -np.pi / 2, -np.pi / 2, np.pi / 2])]
     for system_idx in range(0, len(ctr_systems)):
-        ee_pos = ctr_kine_model.forward_kinematics(q, system_idx)
-        r1, r2, r3 = ctr_kine_model.get_rs()
-        ax.plot(r1[:,0] * 1000, r1[:,2] * 1000, linewidth=4.0, c=plt.cm.tab20c(system_idx*4), label='System ' + str(system_idx))
-        ax.plot(r2[:,0] * 1000, r2[:,2] * 1000, linewidth=6.0, c=plt.cm.tab20c(system_idx*4 + 1))
-        ax.plot(r3[:,0] * 1000, r3[:,2] * 1000, linewidth=8.0, c=plt.cm.tab20c(system_idx*4 + 2))
-        ax.set_xlabel('$x$ (mm)')
-        ax.set_ylabel('$z$ (mm)')
-        ax.set_xlim([0, 250])
-        ax.set_ylim([0, 300])
-        ax.set_aspect('equal')
+        labelled = False
+        for q in q_list:
+            ee_pos = ctr_kine_model.forward_kinematics(q, system_idx)
+            r1, r2, r3 = ctr_kine_model.get_rs()
+            if not labelled:
+                labelled = True
+                ax.plot(r1[:,0] * 1000, r1[:,2] * 1000, linewidth=4.0, c=plt.cm.tab20c(system_idx*4), label='System ' + str(system_idx))
+            else:
+                ax.plot(r1[:,0] * 1000, r1[:,2] * 1000, linewidth=4.0, c=plt.cm.tab20c(system_idx*4))
+            ax.plot(r2[:,0] * 1000, r2[:,2] * 1000, linewidth=6.0, c=plt.cm.tab20c(system_idx*4 + 1))
+            ax.plot(r3[:,0] * 1000, r3[:,2] * 1000, linewidth=8.0, c=plt.cm.tab20c(system_idx*4 + 2))
+            ax.set_xlabel('$x$ (mm)')
+            ax.set_ylabel('$z$ (mm)')
+            ax.set_xlim([-100, 250])
+            ax.set_ylim([0, 400])
+            ax.set_aspect('equal')
     ax.legend(loc='best')
+    plt.grid()
     plt.show()
