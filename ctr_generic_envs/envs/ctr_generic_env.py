@@ -59,42 +59,14 @@ class GoalTolerance(object):
     def decay_function(self):
         return self.a * np.power(1 - self.r, self.training_step)
 
-class CtrGenericEnv(gym.GoalEnv):
-    def __init__(self, ctr_systems, action_length_limit, action_rotation_limit, max_episode_steps, n_substeps,
-                 goal_tolerance_parameters, noise_parameters, constrain_alpha, relative_q, initial_q, resample_joints,
-                 render, evaluation, num_systems=None, select_systems=None, length_based_sample=False, domain_rand=0.0):
-        if num_systems == None:
-            self.num_systems = len(ctr_systems.keys())
-        else:
-            self.num_systems = num_systems
-        self.systems = list()
-        if select_systems is None:
-            for i in range(0, self.num_systems):
-                system_args = ctr_systems['ctr_' + str(i)]
-                # Extract tube parameters
-                num_tubes = len(system_args.keys())
-                tubes = list()
-                for i in range(0, num_tubes):
-                    tube_args = system_args['tube_' + str(i)]
-                    tubes.append(Tube(**tube_args))
-                self.systems.append(tubes)
-        else:
-            if len(select_systems) != self.num_systems:
-                raise ValueError("Selected systems and number of systems do not match.")
-            for system in select_systems:
-                system_args = ctr_systems['ctr_' + str(system)]
-                # Extract tube parameters
-                num_tubes = len(system_args.keys())
-                tubes = list()
-                for i in range(0, num_tubes):
-                    tube_args = system_args['tube_' + str(i)]
-                    tubes.append(Tube(**tube_args))
-                self.systems.append(tubes)
 
-        self.select_systems = select_systems
-        self.num_tubes = len(self.systems[0])
-        self.length_based_sample = length_based_sample
-        self.initial_q = initial_q
+class CtrGenericEnv(gym.GoalEnv):
+    def __init__(self, tube_parameters_min, tube_parameters_max, action_length_limit, action_rotation_limit,
+                 max_episode_steps, n_substeps, goal_tolerance_parameters, noise_parameters, initial_q, resample_joints,
+                 render, evaluation, domain_rand=0.0):
+        # Get min and max of all tube parameters
+        self.num_tubes = 3
+        self.initial_q = np.array(initial_q)
         self.domain_rand = domain_rand
 
         self.action_length_limit = action_length_limit
@@ -109,60 +81,43 @@ class CtrGenericEnv(gym.GoalEnv):
         self.max_episode_steps = max_episode_steps
         self.n_substeps = n_substeps
         self.resample_joints = resample_joints
-        self.constrain_alpha = constrain_alpha
+        self.resample_joints = True
         self.desired_q = []
 
-        self.model = ExactModel(self.systems)
-        ext_tol = 1e-4
+        self.model = ExactModel()
         self.r_df = None
 
-        self.rep_obj = TrigObs(self.systems, goal_tolerance_parameters, noise_parameters, initial_q, relative_q, ext_tol,
-                               constrain_alpha)
+        self.rep_obj = TrigObs(tube_parameters_min, tube_parameters_max, goal_tolerance_parameters, noise_parameters,
+                               initial_q)
         self.goal_tol_obj = GoalTolerance(goal_tolerance_parameters)
         self.t = 0
         self.evaluation = evaluation
         self.observation_space = self.rep_obj.get_observation_space()
 
-        self.system_idx = 0
-
-    def reset(self, goal=None, system_idx=None):
+    def reset(self, goal=None):
         self.t = 0
+        # Sample tube parameters
+        self.tube_params = self.rep_obj.sample_tube_parameters(num_discrete=100)
+        self.model.set_tube_parameters(self.tube_params)
         # By default domain_rand is 0.0 so no randomization is applied
-        self.model.randomize_parameters(self.domain_rand)
-        if system_idx is None:
-            if self.length_based_sample:
-                # Get overall length
-                overall_length = 0
-                inner_lengths = []
-                for system in self.systems:
-                    # Innermost tube length
-                    overall_length += system[0].L
-                    inner_lengths.append(system[0].L)
-                pvals = np.array(inner_lengths) / overall_length
-                self.system_idx = np.where(np.random.multinomial(1, pvals) == 1)[0][0]
-            else:
-                self.system_idx = np.random.randint(self.num_systems)
-        else:
-            self.system_idx = system_idx
+        #self.model.randomize_parameters(self.domain_rand)
         self.r_df = None
         if goal is None:
             # Resample a desired goal and its associated q joint
-            self.desired_q = self.rep_obj.sample_goal(self.system_idx)
-            desired_goal = self.model.forward_kinematics(self.desired_q, self.system_idx)
+            self.desired_q = self.rep_obj.sample_goal(self.tube_params)
+            desired_goal = self.model.forward_kinematics(self.desired_q)
         else:
             desired_goal = goal
         if self.resample_joints:
-            self.starting_joints = self.rep_obj.sample_goal(self.system_idx)
+            self.starting_joints = self.rep_obj.sample_goal(self.tube_params)
             self.rep_obj.set_q(self.starting_joints)
-            achieved_goal = self.model.forward_kinematics(self.rep_obj.get_q(), self.system_idx)
+            achieved_goal = self.model.forward_kinematics(self.rep_obj.get_q())
             self.starting_position = achieved_goal
         else:
-            self.starting_joints = np.asarray(self.initial_q)
-            self.rep_obj.set_q(self.starting_joints)
-            achieved_goal = self.model.forward_kinematics(self.rep_obj.get_q(), self.system_idx)
+            self.starting_joints = np.array(self.rep_obj.get_q())
+            achieved_goal = self.model.forward_kinematics(self.starting_joints)
             self.starting_position = achieved_goal
-            self.starting_joints = self.rep_obj.get_q()
-        obs = self.rep_obj.get_obs(desired_goal, achieved_goal, self.goal_tol_obj.get_tol(), self.system_idx)
+        obs = self.rep_obj.get_obs(desired_goal, achieved_goal, self.goal_tol_obj.get_tol(), self.tube_params)
         return obs
 
     def seed(self, seed=None):
@@ -175,22 +130,21 @@ class CtrGenericEnv(gym.GoalEnv):
         # Update goal tolerance value
         # self.goal_tol_obj.update()
         for _ in range(self.n_substeps):
-            self.rep_obj.set_action(action, self.system_idx)
+            self.rep_obj.set_action(action)
         # Compute FK
-        achieved_goal = self.model.forward_kinematics(self.rep_obj.q, self.system_idx)
+        achieved_goal = self.model.forward_kinematics(self.rep_obj.q)
         desired_goal = self.rep_obj.get_desired_goal()
         self.t += 1
         reward = self.compute_reward(achieved_goal, desired_goal, dict())
-        done = (reward == 0) or (self.t >= self.max_episode_steps)
-        obs = self.rep_obj.get_obs(desired_goal, achieved_goal, self.goal_tol_obj.get_tol(), self.system_idx)
+        done = bool((reward == 0) or (self.t >= self.max_episode_steps))
+        obs = self.rep_obj.get_obs(desired_goal, achieved_goal, self.goal_tol_obj.get_tol(), self.tube_params)
         if self.evaluation:
             # Evaluation infos
-            #info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
+            # info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
             #        'error': np.linalg.norm(desired_goal - achieved_goal)}
             info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
                     'errors_pos': np.linalg.norm(desired_goal - achieved_goal),
                     'errors_orient': 0,
-                    'system_idx': self.select_systems[self.system_idx],
                     'position_tolerance': self.goal_tol_obj.get_tol(),
                     'orientation_tolerance': 0,
                     'achieved_goal': achieved_goal,
@@ -202,7 +156,7 @@ class CtrGenericEnv(gym.GoalEnv):
         else:
             info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
                     'error': np.linalg.norm(desired_goal - achieved_goal)}
-            #info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
+            # info = {'is_success': (np.linalg.norm(desired_goal - achieved_goal) < self.goal_tol_obj.get_tol()),
             #        'errors_pos':  np.linalg.norm(desired_goal - achieved_goal),
             #        'errors_orient': 0,
             #        'position_tolerance': self.goal_tol_obj.get_tol(),
@@ -218,9 +172,6 @@ class CtrGenericEnv(gym.GoalEnv):
     def close(self):
         print("Closed env.")
 
-    def set_system_idx(self, system_idx):
-        self.system_idx = system_idx
-
     def update_goal_tolerance(self, timestep):
         self.goal_tol_obj.update(timestep)
 
@@ -229,7 +180,6 @@ class CtrGenericEnv(gym.GoalEnv):
 
     def print_parameters(self):
         print("----Observation and q_space----")
-        print("relative q: ", self.rep_obj.relative_q)
         print("tolerance params: ", self.rep_obj.goal_tolerance_parameters)
 
         print("----Goal tolerance parameters----")
@@ -237,8 +187,12 @@ class CtrGenericEnv(gym.GoalEnv):
         print("N_ts: ", self.goal_tol_obj.N_ts)
         print("tolerance function: ", self.goal_tol_obj.function)
 
-    def get_obs_dim(self):
-        return self.rep_obj.obs_dim
 
-    def get_goal_dim(self):
-        return self.rep_obj.goal_dim
+if __name__ == '__main__':
+    import ctr_generic_envs
+    from stable_baselines.common.env_checker import check_env
+    print('environment reset.')
+    for i in range(1000):
+        env = gym.make("CTR-Generic-Reach-v0")
+        check_env(env)
+        print(i)

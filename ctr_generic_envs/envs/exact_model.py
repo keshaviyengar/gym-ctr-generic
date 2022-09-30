@@ -10,6 +10,7 @@ from mpi4py import MPI
 
 from copy import deepcopy
 
+
 def sample_parameters(tube_parameters, randomization):
     L = randomize_value(tube_parameters.L, 0)
     L_c = randomize_value(tube_parameters.L_c, 0)
@@ -24,16 +25,15 @@ def sample_parameters(tube_parameters, randomization):
                           y_curvature)
     return new_parameters
 
+
 def randomize_value(value, randomization):
     sampled_value = np.random.uniform(value - value * randomization, value + value * randomization)
     return sampled_value
 
 
 class ExactModel(object):
-    def __init__(self, systems):
-        self.systems = deepcopy(systems)
-        self.curr_systems = deepcopy(systems)
-        self.num_tubes = len(self.systems[0])
+    def __init__(self):
+        self.num_tubes = 3
         self.r = []
         self.r1 = []
         self.r2 = []
@@ -41,13 +41,24 @@ class ExactModel(object):
         self.r_transforms = []
 
     # Randomize parameters by a percentage
-    def randomize_parameters(self, randomization):
-        for i in range(len(self.curr_systems)):
-            self.curr_systems[i][0] = sample_parameters(self.systems[i][0], randomization)
-            self.curr_systems[i][1] = sample_parameters(self.systems[i][1], randomization)
-            self.curr_systems[i][2] = sample_parameters(self.systems[i][2], randomization)
+    #def randomize_parameters(self, randomization):
+    #    for i in range(len(self.curr_systems)):
+    #        self.curr_systems[i][0] = sample_parameters(self.systems[i][0], randomization)
+    #        self.curr_systems[i][1] = sample_parameters(self.systems[i][1], randomization)
+    #        self.curr_systems[i][2] = sample_parameters(self.systems[i][2], randomization)
 
-    def forward_kinematics(self, q, system_idx, **kwargs):
+    def set_tube_parameters(self, tube_parameters):
+        self.t0 = Tube(tube_parameters[0]['L'], tube_parameters[0]['L_c'], tube_parameters[0]['d_i'],
+                       tube_parameters[0]['d_o'], tube_parameters[0]['E_I'], tube_parameters[0]['G_J'],
+                       tube_parameters[0]['x_curv'], 0)
+        self.t1 = Tube(tube_parameters[1]['L'], tube_parameters[1]['L_c'], tube_parameters[1]['d_i'],
+                       tube_parameters[1]['d_o'], tube_parameters[1]['E_I'], tube_parameters[1]['G_J'],
+                       tube_parameters[1]['x_curv'], 0)
+        self.t2 = Tube(tube_parameters[2]['L'], tube_parameters[2]['L_c'], tube_parameters[2]['d_i'],
+                       tube_parameters[2]['d_o'], tube_parameters[2]['E_I'], tube_parameters[2]['G_J'],
+                       tube_parameters[2]['x_curv'], 0)
+
+    def forward_kinematics(self, q, **kwargs):
         """
         q_0 = np.array([0, 0, 0, 0, 0, 0])
         # initial twist (for ivp solver)
@@ -62,11 +73,10 @@ class ExactModel(object):
         return CTR.r[-1]
         """
         # position of tubes' base from template (i.e., s=0)
-        q_0 = np.array([0, 0, 0, 0, 0, 0])
+        q_0 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         beta = q[0:3] + q_0[0:3]
 
-        segment = Segment(self.curr_systems[system_idx][0], self.curr_systems[system_idx][1],
-                          self.curr_systems[system_idx][2], beta)
+        segment = Segment(self.t0, self.t1, self.t2, beta)
 
         r_0_ = np.array([0, 0, 0]).reshape(3, 1)
         alpha_1_0 = q[3] + q_0[3]
@@ -77,7 +87,7 @@ class ExactModel(object):
 
         # initial twist
         uz_0_ = np.array([0, 0, 0])
-        self.r, U_z, tip = self.ctr_model(system_idx, uz_0_, alpha_0_, r_0_, R_0_, segment, beta)
+        self.r, U_z, tip = self.ctr_model(uz_0_, alpha_0_, r_0_, R_0_, segment, beta)
         self.r1 = self.r[tip[1]:tip[0] + 1]
         self.r2 = self.r[tip[2]:tip[1] + 1]
         self.r3 = self.r[:tip[2] + 1]
@@ -132,10 +142,10 @@ class ExactModel(object):
         return dydt.ravel()
 
     # CTR model
-    def ctr_model(self, system_idx, uz_0, alpha_0, r_0, R_0, segmentation, beta):
-        tube1 = self.curr_systems[system_idx][0]
-        tube2 = self.curr_systems[system_idx][1]
-        tube3 = self.curr_systems[system_idx][2]
+    def ctr_model(self, uz_0, alpha_0, r_0, R_0, segmentation, beta):
+        tube1 = self.t0
+        tube2 = self.t1
+        tube3 = self.t2
         Length = np.empty(0)
         r = np.empty((0, 3))
         u_z = np.empty((0, 3))
@@ -145,12 +155,12 @@ class ExactModel(object):
             # Initial conditions, 3 initial twist + 3 initial angle + 3 initial position + 9 initial rotation matrix
             y_0 = np.vstack((uz_0.reshape(3, 1), alpha_0, r_0, R_0)).ravel()
             s_span = np.linspace(span[seg], span[seg + 1] - 1e-6, num=30)
-            #s = odeint(self.ode_eq, y_0, s_span, args=(
+            # s = odeint(self.ode_eq, y_0, s_span, args=(
             #    segmentation.U_x[:, seg], segmentation.U_y[:, seg], segmentation.EI[:, seg], segmentation.GJ[:, seg]),
             #           tfirst=True)
             if np.all(np.diff(s_span) < 0):
                 print("s_span not sorted correctly. Resorting...")
-                print("linespace: ", s_span[seg], s_span[seg+1] - 1e-6)
+                print("linespace: ", s_span[seg], s_span[seg + 1] - 1e-6)
                 s_span = np.sort(s_span)
             sol = solve_ivp(fun=lambda s, y: self.ode_eq(s, y, segmentation.U_x[:, seg], segmentation.U_y[:, seg],
                                                          segmentation.EI[:, seg], segmentation.GJ[:, seg]),

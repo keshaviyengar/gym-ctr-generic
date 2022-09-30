@@ -13,17 +13,16 @@ q: Current joint as relative joint representation
 """
 
 
+# TODO: Inital q is always fully extended (all zeros)
+
+
 class TrigObs(object):
-    def __init__(self, systems, goal_tolerance_parameters, noise_parameters, initial_q, relative_q, ext_tol,
-                 constrain_alpha):
-        self.systems = systems
+    def __init__(self, tube_parameters_low, tube_parameters_high, goal_tolerance_parameters, noise_parameters,
+                 initial_q):
         self.tube_lengths = list()
-        self.num_tubes = len(self.systems[0])
-        for system in self.systems:
-            tube_length = list()
-            for tube in system:
-                tube_length.append(tube.L)
-            self.tube_lengths.append(tube_length)
+        self.num_tubes = 3
+        self.tube_parameters_low = tube_parameters_low
+        self.tube_parameters_high = tube_parameters_high
 
         self.goal_tolerance_parameters = goal_tolerance_parameters
         self.noise_parameters = noise_parameters
@@ -33,38 +32,16 @@ class TrigObs(object):
         self.tracking_std_noise = np.full(3, noise_parameters['tracking_std'])
         # Keep q as absolute joint positions, convert to relative as needed and store as absolute
         self.q = initial_q
-        self.relative_q = relative_q
-
-        # Q space, create per system
-        self.q_spaces = list()
-        for tube_betas in self.tube_lengths:
-            if constrain_alpha:
-                self.q_spaces.append(gym.spaces.Box(low=np.concatenate((-np.array(tube_betas) + ext_tol,
-                                                                        np.full(self.num_tubes, -np.pi))),
-                                                    high=np.concatenate((np.full(self.num_tubes, 0),
-                                                                         np.full(self.num_tubes, np.pi)))
-                                                    ))
-            else:
-                self.q_spaces.append(gym.spaces.Box(low=np.concatenate((-np.array(tube_betas) + ext_tol,
-                                                                        np.full(self.num_tubes, -np.inf))),
-                                                    high=np.concatenate((np.full(self.num_tubes, 0),
-                                                                         np.full(self.num_tubes, np.inf)))
-                                                    ))
-        self.q_sample_spaces = list()
-        for tube_betas in self.tube_lengths:
-            self.q_sample_spaces.append(gym.spaces.Box(low=np.concatenate((-np.array(tube_betas) + ext_tol,
-                                                                           np.full(self.num_tubes, -np.pi))),
-                                                       high=np.concatenate((np.full(self.num_tubes, 0),
-                                                                            np.full(self.num_tubes, np.pi)))
-                                                       ))
+        # TODO: Set the tube lengths
+        self.tube_lengths = np.zeros(3)
         # desired, achieved goal space
         self.observation_space = self.get_observation_space()
 
-        self.goal_dim = 3
-
-    def set_action(self, action, system_idx):
-        self.q = np.clip(self.q + action, self.q_spaces[system_idx].low, self.q_spaces[system_idx].high)
-        q_betas = self.q[:self.num_tubes]
+    # TODO: Actions are -1 to 1
+    def set_action(self, action):
+        # TODO: Just clip the tube length vs. beta instead of using q spaces
+        self.q += action
+        q_betas = np.clip(self.q[:self.num_tubes], np.zeros(self.num_tubes, dtype=float), self.tube_lengths)
         q_alphas = self.q[self.num_tubes:]
         for i in range(1, self.num_tubes):
             # Remember ordering is reversed, since we have innermost as last whereas in constraints its first.
@@ -72,82 +49,59 @@ class TrigObs(object):
             # Bi-1 >= Bi - Li-1 + Li
             q_betas[i - 1] = min(q_betas[i - 1], q_betas[i])
             q_betas[i - 1] = max(q_betas[i - 1],
-                                 self.tube_lengths[system_idx][i] - self.tube_lengths[system_idx][i - 1] + q_betas[i])
+                                 self.tube_lengths[i] - self.tube_lengths[i - 1] + q_betas[i])
 
         self.q = np.concatenate((q_betas, q_alphas))
 
-    def sample_goal(self, system_idx):
-        # while loop to get constrained points, maybe switch this for a workspace later on
-        sample_counter = 0
-        while True:
-            q_sample = self.q_sample_spaces[system_idx].sample()
-            betas = q_sample[0:self.num_tubes]
-            alphas = q_sample[self.num_tubes:]
-            # Apply constraints
-            valid_joint = []
-            for i in range(1, self.num_tubes):
-                valid_joint.append((betas[i - 1] <= betas[i]) and (
-                        betas[i - 1] + self.tube_lengths[system_idx][i - 1] >= self.tube_lengths[system_idx][i] + betas[
-                    i]))
-                # print(self.num_tubes)
-                # print("q_sample: ", q_sample)
-                # print("B", i - 1, " <= ", "B", i, " : ", q_sample[i - 1], " <= ", q_sample[i])
-                # print("B", i - 1, " + L", i - 1, " <= ", "B", i, " + L", i, " : ",
-                #       q_sample[i - 1] + self.tube_lengths[i - 1], " >= ", q_sample[i] + self.tube_lengths[i])
-                # print("valid joint: ", valid_joint)
-                # print("")
-            sample_counter += 1
-            if all(valid_joint):
-                break
-            if sample_counter > 1000:
-                raise ValueError("Stuck sampling goals")
-        q_constrain = np.concatenate((betas, alphas))
-        return q_constrain
+    # TODO: Add in alpha_U_to_alpha and beta_U_to_beta
+    def sample_goal(self, tube_parameters):
+        """
+        Sample a joint goal while considering constraints on extension and joint limits.
+        :param system: The system to to sample the goal.
+        :return: Constrained achievable joint values.
+        """
+        # Sample a joint position
+        alphas_U = np.random.uniform(low=-np.ones((1, 3)), high=np.ones((1, 3)))
+        alpha_max = np.pi / 4
+        alphas = np.flip(np.squeeze(self.alpha_U_to_alpha(alphas_U, alpha_max)))
+        # Sample with M_B instead
+        # Sample betas, ordering is reversed
+        L_star = np.array([tube_parameters[2]['L'], tube_parameters[1]['L'], tube_parameters[0]['L']])
+        B_U = np.random.uniform(low=-np.ones((1, 3)), high=np.ones((1, 3)))
+        betas = np.flip(self.B_U_to_B(B_U, L_star[0], L_star[1], L_star[2]))
+        joint_constrain = np.concatenate((betas, alphas))
+        return joint_constrain
 
-    def get_obs(self, desired_goal, achieved_goal, goal_tolerance, system_idx):
+    # Conversion between normalized and un-normalized joints. Ordered outer to innermost tube.
+    def B_U_to_B(self, B_U, L_1, L_2, L_3):
+        B_U = np.append(B_U, 1)
+        M_B = np.array([[-L_1, 0, 0],
+                        [-L_1, L_1 - L_2, 0],
+                        [-L_1, L_1 - L_2, L_2 - L_3]])
+        normalized_B = np.block([[0.5 * M_B, 0.5 * np.matmul(M_B, np.ones((3, 1)))],
+                                 [np.zeros((1, 3)), 1]])
+        B = np.matmul(normalized_B, B_U)
+        return B[:3]
+
+    def alpha_U_to_alpha(self, alpha_U, alpha_max):
+        return alpha_max * alpha_U
+
+    def get_obs(self, desired_goal, achieved_goal, goal_tolerance, tube_parameters):
         # Add noise to q, rotation and extension (encoder noise)
         noisy_q = np.random.normal(self.q, self.q_std_noise)
         # Add noise to achieved goal (tracker noise)
         noisy_achieved_goal = np.random.normal(achieved_goal, self.tracking_std_noise)
-        # Relative joint representation
-        if self.relative_q:
-            rel_q = self.qabs2rel(noisy_q)
-            rep = self.joint2rep(rel_q)
-        else:
-            rep = self.joint2rep(noisy_q)
-        if len(self.systems) == 1:
-            obs = np.concatenate([
-                rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance], dtype=np.float64)
-            ])
-        else:
-            obs = np.concatenate([
-                rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance, system_idx], dtype=np.float64)
-            ])
-
+        rel_q = self.qabs2rel(noisy_q)
+        rep = self.joint2rep(rel_q)
+        tube_parameters = np.array(
+            [list(tube_parameters[0].values()), list(tube_parameters[1].values()),
+             list(tube_parameters[2].values())]).flatten()
+        obs = np.concatenate([rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance]), tube_parameters])
         self.obs = {
             'desired_goal': desired_goal.copy(),
             'achieved_goal': noisy_achieved_goal.copy(),
             'observation': obs.copy()
         }
-        # np.set_printoptions(precision=3)
-        # if not self.observation_space["desired_goal"].contains(desired_goal):
-        #    print("desired goal not in space.")
-        # if not self.observation_space["achieved_goal"].contains(achieved_goal):
-        #    print("achieved goal not in space.")
-        # if not self.observation_space["observation"].contains(self.obs["observation"]):
-        #    if not self.get_rep_space().contains(rep):
-        #        if np.argwhere(rep < self.get_rep_space().low).size != 0:
-        #            print("rep_val: ", rep[np.argwhere(rep < self.get_rep_space().low)])
-        #            print("rep_low: ", self.get_rep_space().low)
-        #        if np.argwhere(rep > self.get_rep_space().high).size != 0:
-        #            print("rep_val: ", rep[np.argwhere(rep > self.get_rep_space().high)])
-        #            print("rep_high: ", self.get_rep_space().high)
-        #        print("rep: ", rep)
-        #    else:
-        #        print("goal error or tolerance out of bounds.")
-        #        print("low: ", self.observation_space["observation"].low[9:])
-        #        print("high: ", self.observation_space["observation"].high[9:])
-        #        print("error and tol: ", np.concatenate((desired_goal - noisy_achieved_goal, np.array([goal_tolerance]))))
         return self.obs
 
     # q is in relative coordinates to need to convert to absolute.
@@ -178,46 +132,87 @@ class TrigObs(object):
     def get_achieved_goal(self):
         return self.obs['achieved_goal']
 
-    # TODO: Get min lengths
-    def get_rep_space(self):
-        rep_low = np.array([])
-        rep_high = np.array([])
-        # TODO: zero tol needs to be included in model and base class
-        zero_tol = 1e-4
-        max_tube_lengths = np.amax(np.array(self.tube_lengths), axis=0)
-        for tube_length in max_tube_lengths:
-            rep_low = np.append(rep_low, [-1, -1, -tube_length + zero_tol])
-            rep_high = np.append(rep_high, [1, 1, 0])
-        rep_space = gym.spaces.Box(low=rep_low, high=rep_high, dtype="float32")
-        return rep_space
+    def get_parameter_space(self):
+        diameter_diff = 0.4e-3
+        parameters_low = np.array([self.tube_parameters_low['L'], self.tube_parameters_low['L_c'],
+                                   self.tube_parameters_low['d_o'] - diameter_diff,
+                                   self.tube_parameters_low['d_i'] - diameter_diff,
+                                   self.tube_parameters_low['E_I'], self.tube_parameters_low['G_J'],
+                                   self.tube_parameters_low['x_curv']])
+        parameters_high = np.array([self.tube_parameters_high['L'], self.tube_parameters_high['L_c'],
+                                    self.tube_parameters_high['d_o'] + 0.4e-3 * self.num_tubes,
+                                    self.tube_parameters_high['d_i'] + 0.4e-3 * self.num_tubes,
+                                    self.tube_parameters_high['E_I'], self.tube_parameters_high['G_J'],
+                                    self.tube_parameters_high['x_curv']])
+        parameter_space = gym.spaces.Box(low=np.tile(parameters_low, self.num_tubes),
+                                         high=np.tile(parameters_high, self.num_tubes), dtype='float32')
+        return parameter_space
+
+    def sample_tube_parameters(self, num_discrete):
+        # Constraints:
+        # L >= L_c
+        # d_i < d_o
+        # L_1 >= L_2 >= L_3
+        # di_1 >= di_2 >= di_3
+        # do_1 >= do_2 >= do_3
+        # xcurve_1 >= xcurve_2 >= xcurve_3
+        tube_params = {}
+        tube_parameters = []
+        # Define sample space for each parameter
+        E_I_sample_space = np.linspace(self.tube_parameters_low['E_I'], self.tube_parameters_low['E_I'], num_discrete)
+        G_J_sample_space = np.linspace(self.tube_parameters_low['G_J'], self.tube_parameters_low['G_J'], num_discrete)
+        L_sample_space = np.linspace(self.tube_parameters_low['L'], self.tube_parameters_high['L'], num_discrete)
+        L_c_sample_space = np.linspace(self.tube_parameters_low['L_c'], self.tube_parameters_high['L_c'], num_discrete)
+        d_o_sample_space = np.linspace(self.tube_parameters_low['d_o'], self.tube_parameters_high['d_o'], num_discrete)
+        d_i_sample_space = np.linspace(self.tube_parameters_low['d_i'], self.tube_parameters_high['d_i'], num_discrete)
+        x_curv_sample_space = np.linspace(self.tube_parameters_low['x_curv'], self.tube_parameters_high['x_curv'],
+                                          num_discrete)
+
+        diameter_diff = 0.4e-3
+        G_J = np.random.choice(G_J_sample_space)
+        tube_params['L'] = np.random.choice(L_sample_space)
+        # Sample an L_c smaller than L
+        tube_params['L_c'] = np.random.choice(L_c_sample_space[L_c_sample_space <= tube_params['L']])
+        tube_params['d_o'] = np.random.choice(d_o_sample_space)
+        tube_params['d_i'] = tube_params['d_o'] - diameter_diff
+        tube_params['E_I'] = np.random.choice(E_I_sample_space)
+        tube_params['G_J'] = np.random.choice(G_J_sample_space)
+        tube_params['x_curv'] = np.random.choice(x_curv_sample_space)
+        # Append as tube 0 parameters
+        tube_parameters.append(tube_params)
+        # iterate through tubes starting at tube 1
+        for i in range(1, self.num_tubes):
+            tube_params = {}
+            tube_params['L'] = np.random.choice(L_sample_space[L_sample_space <= tube_parameters[i - 1]['L']])
+            tube_params['L_c'] = np.random.choice(L_c_sample_space[L_c_sample_space <= tube_params['L']])
+            tube_params['d_o'] = tube_parameters[i-1]['d_i'] + 2 * diameter_diff
+            tube_params['d_i'] = tube_params['d_o'] - diameter_diff
+            tube_params['E_I'] = tube_parameters[0]['E_I']
+            tube_params['G_J'] = tube_parameters[0]['G_J']
+            tube_params['x_curv'] = np.random.choice(
+                x_curv_sample_space[x_curv_sample_space <= tube_parameters[i - 1]['x_curv']])
+            tube_parameters.append(tube_params)
+        return tube_parameters
 
     def get_observation_space(self):
         initial_tol = self.goal_tolerance_parameters['initial_tol']
         final_tol = self.goal_tolerance_parameters['final_tol']
-        rep_space = self.get_rep_space()
-
-        if len(self.systems) == 1:
-            obs_space_low = np.concatenate(
-                (rep_space.low, np.array([-2 * 0.1, -2 * 0.1, -0.2, final_tol])))
-            obs_space_high = np.concatenate(
-                (rep_space.high, np.array([2 * 0.1, 2 * 0.1, 0.2, initial_tol])))
-
-        else:
-            obs_space_low = np.concatenate(
-                (rep_space.low, np.array([-2 * 0.1, -2 * 0.1, -0.2, final_tol, 0])))
-            obs_space_high = np.concatenate(
-                (rep_space.high, np.array([2 * 0.1, 2 * 0.1, 0.2, initial_tol, len(self.systems) - 1])))
+        parameter_space = self.get_parameter_space()
+        obs_space_low = np.concatenate(
+            (np.array([-1, -1, -1, -1, -1, -1, -1, -1, -1, -2 * 0.5, -2 * 0.5, -1.0, final_tol]),
+             parameter_space.low))
+        obs_space_high = np.concatenate(
+            (np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 2 * 0.25, 2 * 0.25, 0.5, initial_tol]), parameter_space.high))
         observation_space = gym.spaces.Dict(dict(
-            desired_goal=gym.spaces.Box(low=np.array([-0.1, -0.1, 0]), high=np.array([0.1, 0.1, 0.2]),
-                                        dtype="float32"),
-            achieved_goal=gym.spaces.Box(low=np.array([-0.1, -0.1, 0]), high=np.array([0.1, 0.1, 0.2]),
-                                         dtype="float32"),
+            desired_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, -1.0]), high=np.array([0.5, 0.5, 1.0]),
+                                        dtype=float),
+            achieved_goal=gym.spaces.Box(low=np.array([-0.5, -0.5, -1.0]), high=np.array([0.5, 0.5, 1.0]),
+                                         dtype=float),
             observation=gym.spaces.Box(
-                low=obs_space_low,
-                high=obs_space_high,
-                dtype="float32")
+                low=obs_space_low.flatten(),
+                high=obs_space_high.flatten(),
+                dtype=float)
         ))
-        self.obs_dim = obs_space_low.size
         return observation_space
 
     def rep2joint(self, rep):
