@@ -169,7 +169,6 @@ class TrigObs(object):
                                           num_discrete)
 
         diameter_diff = 0.4e-3
-        G_J = np.random.choice(G_J_sample_space)
         tube_params['L'] = np.random.choice(L_sample_space)
         # Sample an L_c smaller than L
         tube_params['L_c'] = np.random.choice(L_c_sample_space[L_c_sample_space <= tube_params['L']])
