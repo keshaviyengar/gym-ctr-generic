@@ -9,21 +9,20 @@ from stable_baselines.her.utils import HERGoalEnvWrapper
 
 from stable_baselines.bench.monitor import Monitor
 
-from trajectory_plotter import load_agent, plot_trajectory
+from utils import load_agent
+from plotting_utils import plot_trajectory
 
 
 # Aim of this script is to run through a number of episodes, returns the error statistics. This script is used for generic
 # policy evaluation and iterates through each system idx.
 
-def evaluation(env, model, num_episodes, output_path, select_systems):
+def evaluation(env, model, num_episodes, output_path, system):
     seed = np.random.randint(0, 10)
     set_global_seeds(seed)
 
-    num_systems = len(select_systems)
-
     # Iterate through all systems that have been generalized
-    obs = env.reset()
-    for system_idx in select_systems:
+    obs = env.reset(tube_params=system)
+    for i in range(1):
         goal_errors = np.empty((num_episodes), dtype=float)
         episode_lengths = np.empty((num_episodes), dtype=float)
         B_errors = np.empty((num_episodes), dtype=float)
@@ -43,7 +42,7 @@ def evaluation(env, model, num_episodes, output_path, select_systems):
             # Run random episodes and save sequence of actions and states to plot in matlab
             episode_reward = 0
             ep_len = 0
-            obs = env.reset(**{'system_idx' : np.where(system_idx == np.array(select_systems))[0][0]})
+            obs = env.reset(tube_params=system)
             # Set system idx if not None
             while True:
                 action, _ = model.predict(obs, deterministic=True)
@@ -68,7 +67,6 @@ def evaluation(env, model, num_episodes, output_path, select_systems):
                     system_id[episode] = infos.get('system_idx')
                     print("error (mm): ", infos.get("errors_pos") * 1000)
                     print("episode_length: ", ep_len)
-                    print("system_idx: ", infos.get('system_idx'))
                     break
 
         print('mean_errors: ', np.mean(goal_errors))
@@ -85,30 +83,34 @@ def evaluation(env, model, num_episodes, output_path, select_systems):
                                         'alpha_achieved_1', 'alpha_achieved_2', 'alpha_achieved_3',
                                         'alpha_starting_1', 'alpha_starting_2', 'alpha_starting_3', 'system_id'
                                         ])
-        eval_df.to_csv(output_path + "/evaluations_" + str(system_idx) + ".csv")
+        eval_df.to_csv(output_path + "/evaluations_" + str(0) + ".csv")
 
 
 if __name__ == '__main__':
     #gen_model_path = "/her/CTR-Generic-Reach-v0_1/best_model.zip"
-    gen_model_path = "/her/CTR-Generic-Reach-v0_1/CTR-Generic-Reach-v0.zip"
+    gen_model_path = "/her/CTR-Generic-Reach-v0_1/best_model.zip"
 
-    project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tro_2021/tro_results/generic_policy_experiments/'
-    name = 'three_systems/tro_three_systems_2'
-    #name = 'four_systems/tro_four_systems_prop'
-    selected_systems = [0,2,3]
+    project_folder = '/home/keshav/ctm2-stable-baselines/saved_results/tmrb_2022/continuous_generalization/generalize_agent/'
+    name = 'generalize_2'
 
     model_path = project_folder + name + gen_model_path
     output_path = project_folder + name
 
     num_episodes = 1000
+    system_0 = [
+        {'L': 0.431, 'L_c': 0.103, 'd_o': 0.00101, 'd_i': 0.0007, 'E_I': 102.5e+10, 'G_J': 187.9e+10, 'x_curv': 21.3},
+        {'L': 0.332, 'L_c': 0.113, 'd_o': 0.0018, 'd_i': 0.0014, 'E_I': 685.0e+10, 'G_J': 115.3e+10, 'x_curv': 13.1},
+        {'L': 0.174, 'L_c': 0.134, 'd_o': 0.0024, 'd_i': 0.002, 'E_I': 169.6e+10, 'G_J': 142.5e+10, 'x_curv': 3.5},
+
+    ]
+
 
     # Env and model names and paths
     env_id = "CTR-Generic-Reach-v0"
-    env_kwargs = {'evaluation': True, 'relative_q': True, 'resample_joints': False, 'constrain_alpha': False,
-                  'num_systems': len(selected_systems), 'select_systems': selected_systems,
+    env_kwargs = {'evaluation': True, 'resample_joints': False,
                   'goal_tolerance_parameters': {'inc_tol_obs': True, 'initial_tol': 0.020, 'final_tol': 0.001,
                                                 'N_ts': 200000, 'function': 'constant', 'set_tol': 0.001}
                   }
     env, model = load_agent(env_id, env_kwargs, model_path)
     print("output path: " + output_path)
-    evaluation(env, model, num_episodes, output_path, selected_systems)
+    evaluation(env, model, num_episodes, output_path, system)

@@ -94,10 +94,13 @@ class CtrGenericEnv(gym.GoalEnv):
         self.evaluation = evaluation
         self.observation_space = self.rep_obj.get_observation_space()
 
-    def reset(self, goal=None):
+    def reset(self, goal=None, tube_params=None):
         self.t = 0
         # Sample tube parameters
-        self.tube_params = self.rep_obj.sample_tube_parameters(num_discrete=100)
+        if tube_params is None:
+            self.tube_params = self.rep_obj.sample_tube_parameters(num_discrete=100)
+        else:
+            self.tube_params = tube_params
         self.model.set_tube_parameters(self.tube_params)
         # By default domain_rand is 0.0 so no randomization is applied
         #self.model.randomize_parameters(self.domain_rand)
