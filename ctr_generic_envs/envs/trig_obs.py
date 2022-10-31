@@ -93,10 +93,14 @@ class TrigObs(object):
         noisy_achieved_goal = np.random.normal(achieved_goal, self.tracking_std_noise)
         rel_q = self.qabs2rel(noisy_q)
         rep = self.joint2rep(rel_q)
-        tube_parameters = np.array(
-            [list(tube_parameters[0].values()), list(tube_parameters[1].values()),
-             list(tube_parameters[2].values())]).flatten()
-        obs = np.concatenate([rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance]), tube_parameters])
+        # Normalize tube parameters
+        tube_param_space = self.get_parameter_space()
+
+        tube_params = np.array([list(tube_parameters[0].values()), list(tube_parameters[1].values()), list(tube_parameters[2].values())]).flatten()
+        norm_tube_params = np.divide(tube_params, tube_param_space.high)
+        if norm_tube_params.max() > 1.0 or norm_tube_params.min() < 0.0:
+            print('high norm!')
+        obs = np.concatenate([rep, desired_goal - noisy_achieved_goal, np.array([goal_tolerance]), norm_tube_params])
         self.obs = {
             'desired_goal': desired_goal.copy(),
             'achieved_goal': noisy_achieved_goal.copy(),
@@ -135,13 +139,13 @@ class TrigObs(object):
     def get_parameter_space(self):
         diameter_diff = 0.4e-3
         parameters_low = np.array([self.tube_parameters_low['L'], self.tube_parameters_low['L_c'],
-                                   self.tube_parameters_low['d_o'] - diameter_diff,
-                                   self.tube_parameters_low['d_i'] - diameter_diff,
+                                   self.tube_parameters_low['d_i'],
+                                   self.tube_parameters_low['d_i'],
                                    self.tube_parameters_low['E_I'], self.tube_parameters_low['G_J'],
                                    self.tube_parameters_low['x_curv']])
         parameters_high = np.array([self.tube_parameters_high['L'], self.tube_parameters_high['L_c'],
-                                    self.tube_parameters_high['d_o'] + 0.4e-3 * self.num_tubes,
-                                    self.tube_parameters_high['d_i'] + 0.4e-3 * self.num_tubes,
+                                    self.tube_parameters_high['d_o'],
+                                    self.tube_parameters_high['d_o'],
                                     self.tube_parameters_high['E_I'], self.tube_parameters_high['G_J'],
                                     self.tube_parameters_high['x_curv']])
         parameter_space = gym.spaces.Box(low=np.tile(parameters_low, self.num_tubes),
@@ -163,29 +167,30 @@ class TrigObs(object):
         G_J_sample_space = np.linspace(self.tube_parameters_low['G_J'], self.tube_parameters_low['G_J'], num_discrete)
         L_sample_space = np.linspace(self.tube_parameters_low['L'], self.tube_parameters_high['L'], num_discrete)
         L_c_sample_space = np.linspace(self.tube_parameters_low['L_c'], self.tube_parameters_high['L_c'], num_discrete)
-        d_o_sample_space = np.linspace(self.tube_parameters_low['d_o'], self.tube_parameters_high['d_o'], num_discrete)
         d_i_sample_space = np.linspace(self.tube_parameters_low['d_i'], self.tube_parameters_high['d_i'], num_discrete)
         x_curv_sample_space = np.linspace(self.tube_parameters_low['x_curv'], self.tube_parameters_high['x_curv'],
                                           num_discrete)
 
         diameter_diff = 0.4e-3
+        tube_sep = 0.1e-3
         tube_params['L'] = np.random.choice(L_sample_space)
         # Sample an L_c smaller than L
         tube_params['L_c'] = np.random.choice(L_c_sample_space[L_c_sample_space <= tube_params['L']])
-        tube_params['d_o'] = np.random.choice(d_o_sample_space)
-        tube_params['d_i'] = tube_params['d_o'] - diameter_diff
+        tube_params['d_i'] = np.random.choice(d_i_sample_space)
+        tube_params['d_o'] = tube_params['d_i'] + diameter_diff
         tube_params['E_I'] = np.random.choice(E_I_sample_space)
         tube_params['G_J'] = np.random.choice(G_J_sample_space)
         tube_params['x_curv'] = np.random.choice(x_curv_sample_space)
         # Append as tube 0 parameters
         tube_parameters.append(tube_params)
         # iterate through tubes starting at tube 1
+        #TODO: Diameter differences
         for i in range(1, self.num_tubes):
             tube_params = {}
             tube_params['L'] = np.random.choice(L_sample_space[L_sample_space <= tube_parameters[i - 1]['L']])
             tube_params['L_c'] = np.random.choice(L_c_sample_space[L_c_sample_space <= tube_params['L']])
-            tube_params['d_o'] = tube_parameters[i-1]['d_i'] + 2 * diameter_diff
-            tube_params['d_i'] = tube_params['d_o'] - diameter_diff
+            tube_params['d_i'] = tube_parameters[i-1]['d_o'] + tube_sep
+            tube_params['d_o'] = tube_params['d_i'] + diameter_diff
             tube_params['E_I'] = tube_parameters[0]['E_I']
             tube_params['G_J'] = tube_parameters[0]['G_J']
             tube_params['x_curv'] = np.random.choice(

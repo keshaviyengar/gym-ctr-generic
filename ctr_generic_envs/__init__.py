@@ -12,9 +12,9 @@ register(
         # E_I = [5.0e+9, 50.0e+10]
         # G_J = [1.0e+10, 30.0e+10]
         # x_curv = [1.0, 25.0]
-        'tube_parameters_min': {'L': 10e-3, 'L_c': 10.0e-3, 'd_i': 0.1e-3, 'd_o': 0.1e-3, 'E_I': 5.0e+9,
+        'tube_parameters_min': {'L': 10e-3, 'L_c': 10.0e-3, 'd_i': 0.1e-3, 'd_o':1.5e-3, 'E_I': 5.0e+9,
                                 'G_J': 1.0e+10, 'x_curv': 1.0},
-        'tube_parameters_max': {'L': 500e-3, 'L_c': 500.0e-3, 'd_i': 2.0e-3, 'd_o': 2.0e-3, 'E_I': 50.0e+10,
+        'tube_parameters_max': {'L': 500e-3, 'L_c': 500.0e-3, 'd_i': 0.6e-3, 'd_o': 2.0e-3, 'E_I': 50.0e+10,
                                 'G_J': 30.0e+10, 'x_curv': 25.0},
         'action_length_limit': 0.001,
         'action_rotation_limit': 5,
