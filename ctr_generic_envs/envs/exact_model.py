@@ -183,9 +183,15 @@ class ExactModel(object):
         u_z_end = np.array([0.0, 0.0, 0.0])
         tip_pos = np.array([0, 0, 0])
         for k in range(0, 3):
-            b = np.argmax(Length >= d_tip[k] - 1e-3)  # Find where tube curve starts
-            u_z_end[k] = u_z[b, k]
-            tip_pos[k] = b
+            try:
+                b = np.argmax(Length >= d_tip[k] - 1e-3)  # Find where tube curve starts
+                u_z_end[k] = u_z[b, k]
+                tip_pos[k] = b
+            except ValueError:
+                r = np.zeros(3)
+                u_z_end = np.zeros(3)
+                tip_pos = np.zeros(3)
+                return r, u_z_end, tip_pos
 
         return r, u_z_end, tip_pos
 
