@@ -88,11 +88,14 @@ class ExactModel(object):
         # initial twist
         uz_0_ = np.array([0, 0, 0])
         self.r, U_z, tip = self.ctr_model(uz_0_, alpha_0_, r_0_, R_0_, segment, beta)
-        self.r1 = self.r[tip[1]:tip[0] + 1]
-        self.r2 = self.r[tip[2]:tip[1] + 1]
-        self.r3 = self.r[:tip[2] + 1]
-        assert not np.any(np.isnan(self.r))
-        return self.r[-1]
+        try:
+            self.r1 = self.r[tip[1]:tip[0] + 1]
+            self.r2 = self.r[tip[2]:tip[1] + 1]
+            self.r3 = self.r[:tip[2] + 1]
+            assert not np.any(np.isnan(self.r))
+            return self.r[-1]
+        except TypeError:
+            return np.zeros(3)
 
     def get_r(self):
         return self.r
